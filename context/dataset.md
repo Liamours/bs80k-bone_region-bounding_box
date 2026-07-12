@@ -4,7 +4,17 @@
 
 Huang, Z., Pu, X., Tang, G., Ping, M., Jiang, G., Wang, M., Wei, X., Ren, Y. (2022). BS-80K: The first large open-access dataset of bone scan images. Computers in Biology and Medicine, 151, 106221. https://doi.org/10.1016/j.compbiomed.2022.106221
 
-Copy at `reference/BS-80K.pdf`. Paper reports 82544 images from 3247 patients, 13 region-wise slices per view. Our own folder scan found 3249 ids in wholeBodyANT/POST, a small difference from the paper's 3247, not resolved here.
+Copy at `reference/BS-80K.pdf`, gitignored, kept local only, see `.gitignore`. Full text read page by page for this note.
+
+Paper reports 82544 images from 3247 patients. Our own count of `wholeBodyANT`/`wholeBodyPOST` jpg files is also 3247 each, an earlier note in this file said 3249 and called it an unresolved difference, that number came from counting every entry in the folder including the `ant`/`post` xml subfolder and the `.txt` label file as if they were images, filtering to `*.jpg` gives 3247, matching the paper exactly.
+
+Segmentation method the paper builds on, not fetched separately here: J.-Y. Huang, P.-F. Kao, Y.-S. Chen, A set of image processing algorithms for computer-aided diagnosis in nuclear medicine whole body bone scan images, IEEE Trans. Nucl. Sci. 54 (3) (2007) 514-522.
+
+## Acquisition
+
+- Dual head gamma camera, low energy high resolution parallel hole collimator, energy window centered on the 99mTc 140 keV peak, 20% window width
+- Whole body image format is reported as 1024 x 256, matches our own measured wholeBodyANT/POST samples, PIL size (256, 1024), width by height
+- Source images were DICOM, converted to JPEG first for de-identification and for compatibility with image libraries, region segmentation happens after that conversion, so a region crop and its whole body source come from the same already-JPEG image, not from two separately compressed versions
 
 ## Locations
 
@@ -35,22 +45,35 @@ Part name + left or right (if it applies) + view. Example: `kneeLANT` = knee + L
 
 These are the raw side of the raw/crop pair. Each region folder above holds crops taken from these.
 
+## Why region folders have fewer images than whole body folders
+
+Paper section 3.3: not every whole body image could be segmented automatically, so region slices exist for 2925 patients instead of the full patient count. This matches our own `component_coverage.xlsx`, every one of the 26 region folders has exactly 2925 ids, none missing among themselves, just fewer than the whole body folders.
+
 ## Labels
 
-Every folder, region and whole body alike, has a txt file with the same name as the folder. Each line lists one image filename and a label, 0 for normal, 1 for abnormal. This is a classification label, not a bounding box, keep it separate from the crop location work here.
+Every folder, region and whole body alike, has a txt file with the same name as the folder. Each line lists one image filename and a label, 0 for normal, 1 for abnormal.
+
+Per paper section 3.3, this label is not independent of the bounding box annotations, it is derived from them. A physician draws a box around each nidus, suspected malignant, or physiological hot spot, benign, on the whole body image. A whole body image is labeled abnormal if it contains any nidus box. A region slice is labeled abnormal if any nidus box falls inside that region, otherwise normal.
+
+Checked directly against paper Table 2: headANT, headPOST, vertbraANT, vertbraPOST, pelvisANT, pelvisPOST normal/abnormal counts from our own txt files match the paper exactly, for example head is 2690/235 on both views in both the paper and our files. wholeBodyANT and wholeBodyPOST are close but not identical, our files give 2064/1183 and 2194/1053, the paper gives 2065/1182 and 2195/1052, one sample's label differs on each view. Plausibly a later relabel, the paper itself says annotations are reviewed multiple times and the database keeps growing, not chased further here.
 
 ## Existing bounding boxes, different purpose
 
-wholeBodyANT and wholeBodyPOST each contain an `ant` and `post` subfolder. Each xml file there holds bounding box information for one whole body image in the parent folder. Per the source paper, these mark suspectable hot spots for the object detection benchmark, not where a regional crop sits inside the whole body image. Do not reuse these as the answer for this project.
+wholeBodyANT and wholeBodyPOST each contain an `ant` and `post` subfolder. Each xml file there holds bounding box information for one whole body image in the parent folder. Per paper section 3.3 and Fig. 5, purple boxes mark niduses, suspected malignant, green boxes mark physiological hot spots, benign. These are the object detection ground truth for the paper's own hot spot benchmark. They do not mark where a regional crop sits inside the whole body image, do not reuse them as the answer for this project.
+
+The paper does not publish or mention a bounding box for a region slice's location inside its whole body source image anywhere. That box is only what this project is trying to recover, it is not sitting in the dataset waiting to be read.
 
 ## Confirmed
 
 - Every region crop id was matched to a same-numbered whole body file with none dropped, see `src/analysis/crop_size_ratio.py` output, so the crop file number maps directly to the same number in the matching wholeBodyANT or wholeBodyPOST file
 - Per the source paper section 3.2.2, region slices come from an automated pipeline, reference points, then borderlines or contour, then extraction, not a manual or arbitrary crop, see `context/method.md`
+- Per the source paper section 3.2, the whole body image is converted to JPEG before segmentation, so a region crop is not a second, separately compressed copy of the whole body image
+- Whole body and region jpg counts both match the paper's published numbers exactly once non-image files are excluded from the folder count, and head/vertebra/pelvis label counts match paper Table 2 exactly, see Labels above
 
 ## Not yet confirmed
 
 - Output file format for the bounding box we produce, not specified yet
+- The one-sample label difference on whole body ANT and POST against paper Table 2, see Labels above
 
 ## Source
 
