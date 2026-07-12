@@ -243,6 +243,12 @@ Tested against a vertebra crop (background fraction 28%) and a chest crop (also 
 
 Flagged outliers also have clearly worse match quality, not just an unusual position: mean near-exact fraction for flagged rows is 0.33 versus 0.88 across all rows. Position and quality agree with each other here, and this independently re-finds the 2 degenerate ankleR rows above, both sit at (0, 0), far from their component's own median position.
 
+## Where shoulder outliers actually land
+
+Looked at the shoulder outliers by eye. First pass looked only at the single most extreme outlier per shoulder folder by distance, 8 cases, all 8 landed at the feet. That is a selection artifact, not a finding, the feet are mechanically the farthest possible point from the true shoulder location near the top of the image, so the largest-distance cases are the least informative sample to look at.
+
+A random, representative sample of shoulder outliers instead, then binning all 2526 shoulder outliers by y position to check the pattern held: 137 (5%) land close to the true shoulder position anyway (still flagged, but a smaller miss), 782 (31%) land around the pelvis, 995 (39%) around the knee, 612 (24%) around the feet. Wrong shoulder placements scatter broadly down most of the body's length, not toward one specific false attractor. This fits the earlier peak margin finding better than a specific confusable landmark would, a low information template correlating similarly poorly almost everywhere, rather than one particular wrong spot correlating suspiciously well.
+
 - Shoulder's actual problem is still unexplained after ruling out search ambiguity alone, the head-to-pelvis band, background masking at several thresholds and percentiles, and now the evaluation methodology itself. A geometric mismatch template matching cannot express, translation only search against a crop whose true content may involve some rotation or warp, is untested and is the one major remaining category of explanation
 - Whether to detect and flag a fully empty mask explicitly rather than let it fall through to a meaningless (0, 0) prediction, only known to affect 2 of 76050 rows so far, not fixed yet
 - What format to write the output box in, not decided yet
