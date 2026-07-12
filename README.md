@@ -30,4 +30,4 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ## Status
 
-Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. Run across the full dataset, 76050 predictions. One region group, shoulder, is still unreliable, positional outlier checks put its failure rate at 13-30% against under 4% everywhere else.
+Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. Shoulder, the remaining region type, anchors its search on the already-matched vertebra position rather than searching the whole image, cutting its failure rate roughly in half to two thirds, anterior view is now close to every other region, posterior view is improved but still elevated. Run across the full dataset, 76050 predictions.

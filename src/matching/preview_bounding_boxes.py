@@ -20,10 +20,12 @@ N = 5
 ALPHA = 0.5
 BLUE = np.array([0, 0, 255], dtype=np.float64)
 
-REGIONS = [
+PLAIN_REGIONS = [
     "ankleL", "ankleR", "chestL", "chestR", "elbowL", "elbowR",
-    "head", "kneeL", "kneeR", "pelvis", "shoL", "shoR", "vertbra",
+    "head", "kneeL", "kneeR", "pelvis", "vertbra",
 ]
+MARGIN_ABOVE = 100
+MARGIN_BELOW = 250
 
 shared_ids = sorted({int(p.stem) for p in (RAW / f"head{VIEW}").glob("*.jpg")})
 ids = random.Random(0).sample(shared_ids, 20)[:N]
@@ -35,10 +37,22 @@ for ax, i in zip(axes, ids):
     base_rgb = np.stack([whole] * 3, axis=-1).astype(np.float64)
 
     line_mask = np.zeros(whole.shape, dtype=np.uint8)
-    for region in REGIONS:
+    for region in PLAIN_REGIONS:
         crop = np.asarray(Image.open(RAW / f"{region}{VIEW}" / f"{i}.jpg"))
         mask = background_mask(crop)
         m = locate(crop, whole, mask=mask)
+        cv2.rectangle(line_mask, (m["x"], m["y"]), (m["x"] + m["w"], m["y"] + m["h"]), color=255, thickness=1)
+
+    vert_crop = np.asarray(Image.open(RAW / f"vertbra{VIEW}" / f"{i}.jpg"))
+    vert_m = locate(vert_crop, whole, mask=background_mask(vert_crop))
+    band_top = max(0, vert_m["y"] - MARGIN_ABOVE)
+    band_bottom = min(whole.shape[0], vert_m["y"] + MARGIN_BELOW)
+    band = whole[band_top:band_bottom]
+    for part in ["shoL", "shoR"]:
+        crop = np.asarray(Image.open(RAW / f"{part}{VIEW}" / f"{i}.jpg"))
+        mask = background_mask(crop)
+        banded = band.shape[0] >= crop.shape[0]
+        m = locate(crop, band, y_offset=band_top, mask=mask) if banded else locate(crop, whole, mask=mask)
         cv2.rectangle(line_mask, (m["x"], m["y"]), (m["x"] + m["w"], m["y"] + m["h"]), color=255, thickness=1)
 
     outlined = base_rgb.copy()
