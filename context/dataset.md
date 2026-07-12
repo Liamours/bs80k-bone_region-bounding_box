@@ -8,13 +8,14 @@ Copy at `reference/BS-80K.pdf`, gitignored, kept local only, see `.gitignore`. F
 
 Paper reports 82544 images from 3247 patients. Our own count of `wholeBodyANT`/`wholeBodyPOST` jpg files is also 3247 each, an earlier note in this file said 3249 and called it an unresolved difference, that number came from counting every entry in the folder including the `ant`/`post` xml subfolder and the `.txt` label file as if they were images, filtering to `*.jpg` gives 3247, matching the paper exactly.
 
-Segmentation method the paper builds on, not fetched separately here: J.-Y. Huang, P.-F. Kao, Y.-S. Chen, A set of image processing algorithms for computer-aided diagnosis in nuclear medicine whole body bone scan images, IEEE Trans. Nucl. Sci. 54 (3) (2007) 514-522.
+Segmentation method the paper builds on: J.-Y. Huang, P.-F. Kao, Y.-S. Chen, A set of image processing algorithms for computer-aided diagnosis in nuclear medicine whole body bone scan images, IEEE Trans. Nucl. Sci. 54 (3) (2007) 514-522. Local copy at `reference/20070329_TNS-00104-2006_manuscript.pdf`, gitignored, kept local only. Read in full, page by page, see `context/method.md` for the reference point and segmentation detail pulled from it.
 
 ## Acquisition
 
 - Dual head gamma camera, low energy high resolution parallel hole collimator, energy window centered on the 99mTc 140 keV peak, 20% window width
 - Whole body image format is reported as 1024 x 256, matches our own measured wholeBodyANT/POST samples, PIL size (256, 1024), width by height
 - Source images were DICOM, converted to JPEG first for de-identification and for compatibility with image libraries, region segmentation happens after that conversion, so a region crop and its whole body source come from the same already-JPEG image, not from two separately compressed versions
+- The 2007 segmentation method paper (Huang, Kao, Chen, cited above) reports its own acquisition, a different and much smaller hospital dataset, not BS-80K itself, at the same 1024 x 256 resolution and 16-bit grayscale depth for the raw acquired counts (GE Infinia dual head camera, Buddhist Tzu Chi General Hospital, LEHR collimators, 20% window centered on the 140 keV 99mTc peak). This 16-bit figure describes that paper's own source data, not confirmed as BS-80K's own bit depth before its DICOM to JPEG conversion, JPEG itself is 8-bit per channel regardless of original scanner depth. See `context/method.md` for detail
 
 ## Locations
 
