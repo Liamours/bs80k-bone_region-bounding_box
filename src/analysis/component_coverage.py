@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
-OUT = Path(__file__).resolve().parents[2] / "result" / "analysis" / "component_coverage.xlsx"
+OUT = Path(__file__).resolve().parents[2] / "result" / "tables" / "component_coverage.xlsx"
 
 FOLDERS = [
     "ankleLANT", "ankleLPOST", "ankleRANT", "ankleRPOST",

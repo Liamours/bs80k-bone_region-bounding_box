@@ -12,7 +12,7 @@ from PIL import Image
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 ANT_DIR = RAW / "wholeBodyANT"
 POST_DIR = RAW / "wholeBodyPOST"
-OUT = Path(__file__).resolve().parents[2] / "result" / "analysis" / "ant_post_samples.png"
+OUT = Path(__file__).resolve().parents[2] / "result" / "dataset_samples" / "ant_post_samples.png"
 N = 5
 
 plt.rcParams["font.family"] = "Times New Roman"

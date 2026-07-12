@@ -10,7 +10,7 @@ import pandas as pd
 from PIL import Image
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
-OUT = Path(__file__).resolve().parents[2] / "result" / "analysis" / "image_stats.xlsx"
+OUT = Path(__file__).resolve().parents[2] / "result" / "tables" / "image_stats.xlsx"
 
 FOLDERS = [
     "ankleLANT", "ankleLPOST", "ankleRANT", "ankleRPOST",

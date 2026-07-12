@@ -10,8 +10,8 @@ from PIL import Image
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 BASE = Path(__file__).resolve().parents[2]
-STATS = BASE / "result" / "analysis" / "image_stats.xlsx"
-OUT = BASE / "result" / "analysis" / "crop_size_ratio.xlsx"
+STATS = BASE / "result" / "tables" / "image_stats.xlsx"
+OUT = BASE / "result" / "tables" / "crop_size_ratio.xlsx"
 
 
 def whole_body_dims(view: str) -> dict[int, tuple[int, int]]:

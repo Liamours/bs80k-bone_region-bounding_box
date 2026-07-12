@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
-OUT_DIR = Path(__file__).resolve().parents[2] / "result" / "analysis"
+OUT_DIR = Path(__file__).resolve().parents[2] / "result" / "dataset_samples"
 N = 5
 
 REGIONS = [
