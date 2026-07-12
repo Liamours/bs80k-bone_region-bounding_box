@@ -179,9 +179,15 @@ With that fix, real before and after numbers for chest, shoulder, vertebra, mean
 
 One more note worth keeping: ankle's own background fraction, computed the same way, averages roughly 0.62-0.65, higher than shoulder's roughly 0.51-0.54, yet ankle already matched perfectly unmasked. Background fraction alone does not decide whether a region is hard to match, shoulder is not simply "more blank than average."
 
+## Inspecting one shoulder case's mask directly
+
+Same case as before, shoRANT id 1821, this time with `background_mask` applied (threshold 2). The mask itself is shaped correctly, a clean diagonal split matching the real crop's own black wedge boundary. But it is speckled with extra small holes scattered inside the nominal signal region too, and the masked search still only reaches score 0.639 at its own best location, whose extracted window still does not show the crop's distinctive diagonal edge, so this still is not the confirmed true location.
+
+Checked the crop's actual pixel values directly: of 3060 pixels, only 73 (2.4%) are clearly signal, above 20. 967 pixels (32%) sit in a 3 to 20 range, this project's mask threshold of 2 counts all of those as signal, but that range reads as photon count noise floor, not real anatomical signal, given the clearly-signal pixels only go up to 38. The mask built for this case is not wrong in shape, but it is diluted, roughly a third of what it marks as usable is closer to noise than to bone signal. This is a plausible reason masking helped chest, whose signal region is presumably less speckled, and did not help shoulder.
+
 ## Open questions
 
-- Why shoulder resists the same fix that worked well for chest, not confirmed, a plausible next step is inspecting one shoulder case's mask directly the way the earlier shoulder inspection did, to see whether the masked-in signal pixels themselves are the problem rather than the background
+- Whether a higher or data driven mask threshold, for example 20 rather than 2, or a per-crop percentile, gives shoulder a cleaner mask and a better match, not tried yet, motivated directly by the pixel count check above
 - What match score threshold separates a correct match from a wrong one: the baseline above gives real numbers, near-exact fraction and ssim near 1.0 for 18 of 26 folders, a real spread from 0.34 to 0.64 for the other 8, still provisional, not yet checked case by case against ground truth since none exists, only against the metrics themselves and now peak_margin
 - What format to write the output box in, not decided yet
 - How shoulder, chest, and pelvis box edges are actually set: ref 37 answers this in outline for shoulder/thorax and for pelvis, see the sections above, both use several reference points rather than a plain axis aligned box, the exact scan direction for the four shoulder/thorax boundary points is still ambiguous in ref 37's own text, and ref 37 does not confirm whether pelvis crops use I_org or I_fuzzy pixels in the final output, see "Original vs preprocessed pixels in the final crop" above
