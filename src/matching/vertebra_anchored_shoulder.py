@@ -58,8 +58,8 @@ for view in ["ANT", "POST"]:
             metrics = compare(crop, window, mask=mask)
 
             rows.append({
-                "component": name, "id": i, "x": m["x"], "y": m["y"], "banded": banded,
-                "vert_y": vert_m["y"],
+                "component": name, "id": i, "x": m["x"], "y": m["y"], "width": m["w"], "height": m["h"],
+                "banded": banded, "vert_x": vert_m["x"] + vert_m["w"] / 2, "vert_y": vert_m["y"],
                 "match_score": m["score"], "peak_margin": m["peak_margin"],
                 **metrics,
             })
