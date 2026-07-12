@@ -221,6 +221,14 @@ Real numbers change the picture substantially:
 
 This resolves ankle, elbow, head, knee, pelvis, chest, and vertebra, 24 of 26 folders, all effectively solved once search is masked where needed and evaluation is masked always. Shoulder alone remains a real, unexplained problem, not an artifact of how this project was scoring it.
 
+## Checking the masked evaluation is not just rewarding a mostly blank comparison
+
+A fair worry about the correction above: with a third or so of a crop's pixels excluded as background on both sides, could a wrong window still score near 1.0 simply because the excluded portion trivially agrees, real signal quality aside. Checked directly rather than argued about.
+
+`ssim` under `compare`'s mask sets the excluded pixels to 0 in both images before scoring, which does give that portion free credit, `near_exact_fraction`, `mae`, `rmse`, `pearson_corr`, and `hist_intersection` instead drop the excluded pixels entirely rather than zero them, so those five have no such free credit built in.
+
+Tested against a vertebra crop (background fraction 28%) and a chest crop (also 28%), each scored with the same mask against three windows, the actual correct match, an all black fake window, the worst case for this concern since it maximizes how much of the comparison could be trivial, and a window shifted by a plausible 10 pixels. The correct match scores near-exact fraction 1.0 and ssim above 0.996 in both cases. The all black fake window scores near-exact fraction 0.0, pearson correlation 0.0, and ssim 0.006 to 0.11, nowhere near 1.0 despite carrying the same background fraction as the real comparisons. The 10 pixel shift, a small and plausible near miss rather than an adversarial case, still drops ssim to 0.32. The masked evaluation discriminates a genuinely correct match from a wrong one clearly, the background exclusion is not doing the work the near-1.0 scores reported above depend on.
+
 ## Open questions
 
 - Shoulder's actual problem is still unexplained after ruling out search ambiguity alone, the head-to-pelvis band, background masking at several thresholds and percentiles, and now the evaluation methodology itself. A geometric mismatch template matching cannot express, translation only search against a crop whose true content may involve some rotation or warp, is untested and is the one major remaining category of explanation
