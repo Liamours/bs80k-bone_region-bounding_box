@@ -1,0 +1,32 @@
+# bs80k bone region bounding box
+
+Template matching to recover bounding box annotations for the bs80k dataset.
+
+Repo: https://github.com/Liamours/bs80k-bone_region-bounding_box
+
+## Problem
+
+Each sample has a raw image and a cropped image taken from it. The crop's location inside the raw image is not recorded anywhere. This project derives that location as a bounding box.
+
+## Input / output
+
+- Input: raw image, cropped image
+- Output: bounding box (x, y, width, height) of the crop inside the raw image
+
+## Structure
+
+- `intent.md` - what this project is for and what counts as done
+- `AGENTS.md` - instructions for any coding agent working in this repo
+- `CLAUDE.md` - Claude Code specific notes
+- `.claude/skills/` - reusable skill definitions
+- `context/` - background notes on the dataset and the matching approach
+
+## Samples
+
+5 paired anterior/posterior whole body scans, top row anterior, bottom row posterior, matched by column.
+
+![5 paired anterior and posterior whole body samples](result/analysis/ant_post_samples.png)
+
+## Status
+
+Scaffold plus one analysis script, `src/analysis/sample_pairs.py`. No matching code has been written or run yet.
