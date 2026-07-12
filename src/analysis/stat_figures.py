@@ -42,19 +42,10 @@ def boxplot_by_component(df: pd.DataFrame, columns: list[str], out_name: str) ->
 
 FIGURES.mkdir(parents=True, exist_ok=True)
 
-coverage = pd.read_excel(TABLES / "component_coverage.xlsx", sheet_name="summary")
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.bar(coverage["component"], coverage["present"], color="0.3")
-ax.set_ylabel("present")
-ax.tick_params(axis="x", rotation=90, labelsize=7)
-fig.subplots_adjust(left=0.08, right=0.99, top=0.99, bottom=0.3)
-fig.savefig(FIGURES / "component_coverage.png", dpi=200, bbox_inches="tight", pad_inches=0.02)
-plt.close(fig)
-
 stats = pd.read_excel(TABLES / "image_stats.xlsx", sheet_name="per_image")
 boxplot_by_component(stats, ["height", "width", "area", "pixel_mean", "pixel_std"], "image_stats.png")
 
 ratio = pd.read_excel(TABLES / "crop_size_ratio.xlsx", sheet_name="per_image")
 boxplot_by_component(ratio, ["height_ratio", "width_ratio", "area_ratio"], "crop_size_ratio.png")
 
-print(f"saved 3 figures to {FIGURES}")
+print(f"saved 2 figures to {FIGURES}")
