@@ -1,5 +1,11 @@
 # Dataset
 
+## Source paper
+
+Huang, Z., Pu, X., Tang, G., Ping, M., Jiang, G., Wang, M., Wei, X., Ren, Y. (2022). BS-80K: The first large open-access dataset of bone scan images. Computers in Biology and Medicine, 151, 106221. https://doi.org/10.1016/j.compbiomed.2022.106221
+
+Copy at `reference/BS-80K.pdf`. Paper reports 82544 images from 3247 patients, 13 region-wise slices per view. Our own folder scan found 3249 ids in wholeBodyANT/POST, a small difference from the paper's 3247, not resolved here.
+
 ## Locations
 
 - Input (raw, mainly): `C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw`
@@ -35,12 +41,15 @@ Every folder, region and whole body alike, has a txt file with the same name as 
 
 ## Existing bounding boxes, different purpose
 
-wholeBodyANT and wholeBodyPOST each contain an `ant` and `post` subfolder. Each xml file there holds bounding box information for one whole body image in the parent folder. That box marks something on the whole body image itself, not where a regional crop sits inside it, do not reuse these as the answer for this project.
+wholeBodyANT and wholeBodyPOST each contain an `ant` and `post` subfolder. Each xml file there holds bounding box information for one whole body image in the parent folder. Per the source paper, these mark suspectable hot spots for the object detection benchmark, not where a regional crop sits inside the whole body image. Do not reuse these as the answer for this project.
+
+## Confirmed
+
+- Every region crop id was matched to a same-numbered whole body file with none dropped, see `src/analysis/crop_size_ratio.py` output, so the crop file number maps directly to the same number in the matching wholeBodyANT or wholeBodyPOST file
+- Per the source paper section 3.2.2, region slices come from an automated pipeline, reference points, then borderlines or contour, then extraction, not a manual or arbitrary crop, see `context/method.md`
 
 ## Not yet confirmed
 
-- Whether a region crop, for example kneeLANT, is ever resized, rotated, or color adjusted relative to its source whole body image
-- How a region crop file name maps to its source whole body file name and view, ANT or POST
 - Output file format for the bounding box we produce, not specified yet
 
 ## Source
