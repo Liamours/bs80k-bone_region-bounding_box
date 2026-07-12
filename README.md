@@ -24,10 +24,10 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ## Predictions
 
-5 whole body scans with every predicted region bounding box drawn on top, blue, 50% opacity.
+5 whole body scans with every predicted region bounding box outlined on top, blue, 1 pixel.
 
 ![predicted region bounding boxes over whole body scans](result/figures/bounding_box_preview.png)
 
 ## Status
 
-Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. One region group, shoulder, is still unreliable and not yet fixed.
+Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. Run across the full dataset, 76050 predictions. One region group, shoulder, is still unreliable, positional outlier checks put its failure rate at 13-30% against under 4% everywhere else.
