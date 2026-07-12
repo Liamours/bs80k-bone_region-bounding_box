@@ -121,9 +121,20 @@ No independently labeled ground truth (x, y) exists for a region crop's location
 
 Self test in the file's own `__main__` block uses synthetic 40x40 arrays, not real dataset images, since no template matching implementation exists yet to produce a real candidate window. Run and confirmed: identical arrays score perfectly on all six metrics, a shifted, noisy, rescaled, single hot spot pixel, or unrelated array each score worse on at least one metric. For example a uniform brightness/contrast rescale left pearson_corr at 1.0 but dropped hist_intersection to 0.0 and pushed mae past 38, and a single bright misaligned pixel left mae near 0.15 while rmse rose to 6.18, over 5 times mae.
 
+## Baseline results
+
+`src/matching/baseline_template_match.py` is a first, plain baseline: OpenCV `matchTemplate` (`TM_CCOEFF_NORMED`) searches the matching whole body image for each region crop, then `src/eval/crop_match_metrics.py` scores the window found against the real crop. Run on a fixed random sample of 20 ids (seed 0, present in all 26 folders) across all 26 region folders, 520 matches total, results in `result/tables/baseline_template_match.xlsx`.
+
+The 20-sample means split cleanly into three groups, not one uniform result:
+
+- ankle, elbow, head, knee, pelvis (18 of 26 folders): near-exact fraction 1.0 and ssim above 0.98 in every one of these components, the plain baseline finds the exact source location essentially every time
+- vertebra (2 folders): near-exact fraction 0.62-0.64, ssim 0.68-0.73, consistently in the right place but not pixel-exact, matches the contour based, non-rectangular extraction already noted above
+- chest, shoulder (6 folders): near-exact fraction 0.34-0.49, ssim 0.17-0.36, clearly worse than every other region, not explained by evidence in hand yet. These are also the two regions BS-80K's own paper never explicitly assigns a borderline step to, only reference points, see "How the crops were actually made" above, and ref 37 describes shoulder specifically as a small polygon rather than a rectangle, see "How each region boundary is derived" above. A polygon shaped crop, if BS-80K's pipeline preserves that shape rather than using a plain bounding rectangle, would explain a weaker rectangle-vs-rectangle match score, this is a plausible reading of evidence already in this file, not a confirmed cause for BS-80K specifically
+
 ## Open questions
 
-- What match score threshold separates a correct match from a wrong one, needs checking against real samples, not assumed
+- Why chest and shoulder score much lower than every other region on the baseline above, worth checking a few of these matches by eye before assuming a cause
+- What match score threshold separates a correct match from a wrong one: the baseline above gives real numbers, near-exact fraction and ssim near 1.0 for 18 of 26 folders, a real spread from 0.34 to 0.64 for the other 8, still provisional, not yet checked case by case against ground truth since none exists, only against the metrics themselves
 - What format to write the output box in, not decided yet
 - How shoulder, chest, and pelvis box edges are actually set: ref 37 answers this in outline for shoulder/thorax and for pelvis, see the sections above, both use several reference points rather than a plain axis aligned box, the exact scan direction for the four shoulder/thorax boundary points is still ambiguous in ref 37's own text, and ref 37 does not confirm whether pelvis crops use I_org or I_fuzzy pixels in the final output, see "Original vs preprocessed pixels in the final crop" above
 - Whether BS-80K's own pipeline follows ref 37's 46 region breakdown exactly or merges/drops sub-regions before producing its own 26 folders, not confirmed, see the mapping section above, "ankle" specifically has no named counterpart in ref 37
@@ -131,4 +142,4 @@ Self test in the file's own `__main__` block uses synthetic 40x40 arrays, not re
 
 ## Status
 
-Template matching itself is not implemented or run yet, this file is still a plan for that part. `src/eval/crop_match_metrics.py`, the match scoring module described above, is implemented and its self test has been run against synthetic arrays, see that section.
+Baseline template matching is implemented and has been run on a 20-id sample across all 26 region folders, see "Baseline results" above. It works essentially perfectly for 18 of 26 folders and clearly worse for chest and shoulder, vertebra sits in between as expected. Not yet run on the full dataset, and the chest/shoulder gap is not yet explained. `src/eval/crop_match_metrics.py`, the match scoring module used above, is implemented and its self test has been run against synthetic arrays too, see the section above that.

@@ -24,4 +24,4 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ## Status
 
-Early stage. Dataset exploration and statistics so far, matching not implemented yet.
+A plain template matching baseline is in and tested on a sample across every region. It locates 18 of 26 region types essentially exactly, one region group is close but not pixel exact as expected, and two are clearly weaker and not yet explained.
