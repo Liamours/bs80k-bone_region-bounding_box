@@ -22,6 +22,12 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ![crop size relative to whole body image, per component](result/figures/crop_size_ratio.png)
 
+## Predictions
+
+5 whole body scans with every predicted region bounding box drawn on top, blue, 50% opacity.
+
+![predicted region bounding boxes over whole body scans](result/figures/bounding_box_preview.png)
+
 ## Status
 
 Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. One region group, shoulder, is still unreliable and not yet fixed.
