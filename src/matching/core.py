@@ -36,3 +36,14 @@ def locate(crop: np.ndarray, search_region: np.ndarray, y_offset: int = 0, mask:
 def background_mask(crop: np.ndarray, threshold: int = 2) -> np.ndarray:
     """255 where crop is above threshold, 0 where it is near-zero background."""
     return ((crop > threshold).astype(np.uint8)) * 255
+
+
+def percentile_mask(crop: np.ndarray, percentile: float) -> np.ndarray:
+    """255 where crop is above its own given percentile, relative to that one crop.
+
+    A fixed threshold can end up with no pixels above it at all for a dim crop, see
+    context/method.md. A percentile of the crop's own pixels always keeps some fraction of
+    it, regardless of how bright or dim that particular crop is overall.
+    """
+    cutoff = np.percentile(crop, percentile)
+    return ((crop > cutoff).astype(np.uint8)) * 255
