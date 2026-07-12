@@ -1,5 +1,28 @@
 # Method notes
 
+## Summary of experiments
+
+24 of 26 folders are solved and confirmed reliable. Shoulder is the one unresolved folder, roughly 13-30% of its predictions land somewhere anatomically wrong, nothing tried below fixes it. Detail and backing for every row is in the sections that follow.
+
+| # | Experiment | Tested | Result |
+|---|---|---|---|
+| 1 | Plain `matchTemplate` baseline | Does plain cross correlation find each crop | 18 of 26 folders perfect immediately, vertebra, chest, shoulder scored lower |
+| 2 | Second peak margin | Is the low score ambiguity, many similar spots, or a content mismatch | Vertebra: confident single peak, not ambiguity. Chest and shoulder: genuinely ambiguous search |
+| 3 | Head to pelvis search band | Does restricting where to search fix chest/shoulder | No, made shoulder worse, likely cut off the true spot |
+| 4 | Visual inspection of one shoulder case | What does a failure actually look like | Crop is 66% black background, drowning out the real signal |
+| 5 | Masked search, exclude background | Does excluding background from correlation fix it | Fixes chest, does not fix shoulder |
+| 6 | Fixed threshold sweep, 2 to 50 | Does a stricter signal cutoff help shoulder | No, gets worse, also caused empty mask crashes at high thresholds |
+| 7 | Percentile mask sweep, 50th to 95th | Same idea, relative instead of fixed | Same negative result, no crashes this time |
+| 8 | Mask the evaluation too | Was scoring unfairly penalizing a crop's own black padding | Yes, chest and vertebra jump to about 1.0, this solved 24 of 26 |
+| 9 | Verify masked eval is not free credit | Could a wrong window also score about 1.0 from the masking trick | No, deliberately wrong windows still score near 0, legitimate |
+| 10 | Full dataset run, 76050 rows | Does the 20 sample finding hold at scale | Yes, confirms 24 of 26 solved, found 2 genuine failures from near blank crops |
+| 11 | Positional outlier detection | Can position alone, no quality metric, flag wrong placements | Everything except shoulder under 4% outlier rate, shoulder 13-30% |
+| 12 | Eyeballed flagged outliers | Are flagged outliers really wrong | Confirmed, one case landed on the knee instead of the shoulder |
+| 13 | Where shoulder outliers actually land | Is there one specific false attractor | No, scattered, pelvis 31%, knee 39%, feet 24% |
+| 14 | Centroid relative outlier check | Does normalizing to each patient's own body center change the story | No, confirms the same finding independently, plus a clean per-region offset table |
+| 15 | Output format research | How should the bounding boxes be stored | CSV, settled |
+| 16 | Rotation and scale invariant matching | Is shoulder's problem a fixed rotation/scale mismatch | No, quality barely changes, winning angles do not agree with each other |
+
 ## Approach
 
 Template matching: search the raw image for the region that matches the cropped image, then report that region as a bounding box.
