@@ -89,16 +89,28 @@ def hist_intersection(real: np.ndarray, pred: np.ndarray, bins: int = 256) -> fl
     return float(np.minimum(h_real, h_pred).sum() / h_real.sum())
 
 
-def compare(real: np.ndarray, pred: np.ndarray, tol: int = 2) -> dict[str, float]:
-    """Run all metrics above on one real crop vs predicted window pair, same shape required."""
+def compare(real: np.ndarray, pred: np.ndarray, tol: int = 2, mask: np.ndarray | None = None) -> dict[str, float]:
+    """Run all metrics above on one real crop vs predicted window pair, same shape required.
+
+    mask, if given, restricts every metric to the masked-in pixels. Some crops are padded
+    with a black region the source pipeline added, not real anatomy, comparing that padding
+    against real whole body content there would penalize an otherwise correct match for
+    content the crop was never meant to carry in the first place.
+    """
     assert real.shape == pred.shape, f"shape mismatch {real.shape} vs {pred.shape}"
+    if mask is None:
+        real_flat, pred_flat, real_2d, pred_2d = real, pred, real, pred
+    else:
+        keep = mask.astype(bool)
+        real_flat, pred_flat = real[keep], pred[keep]
+        real_2d, pred_2d = np.where(keep, real, 0), np.where(keep, pred, 0)
     return {
-        "near_exact_fraction": near_exact_fraction(real, pred, tol),
-        "mae": mean_abs_error(real, pred),
-        "rmse": root_mean_sq_error(real, pred),
-        "ssim": ssim(real, pred),
-        "pearson_corr": pearson_corr(real, pred),
-        "hist_intersection": hist_intersection(real, pred),
+        "near_exact_fraction": near_exact_fraction(real_flat, pred_flat, tol),
+        "mae": mean_abs_error(real_flat, pred_flat),
+        "rmse": root_mean_sq_error(real_flat, pred_flat),
+        "ssim": ssim(real_2d, pred_2d),
+        "pearson_corr": pearson_corr(real_flat, pred_flat),
+        "hist_intersection": hist_intersection(real_flat, pred_flat),
     }
 
 
@@ -156,6 +168,18 @@ if __name__ == "__main__":
     hot_spot_m = compare(base, hot_spot)
     assert hot_spot_m["mae"] < 1.0, "one pixel out of 1600 should barely move mae"
     assert hot_spot_m["rmse"] > 5 * hot_spot_m["mae"], "rmse should be pulled far more than mae by one hot spot"
+
+    # a crop with a padded-out region should not be penalized there if masked
+    padded = base.copy()
+    padded[:20, :] = 0
+    real_content = rng.integers(50, 200, base.shape, dtype=np.uint8)
+    real_content[20:, :] = base[20:, :]
+    padding_mask = np.zeros(base.shape, dtype=np.uint8)
+    padding_mask[20:, :] = 255
+    unmasked_m = compare(padded, real_content)
+    masked_m = compare(padded, real_content, mask=padding_mask)
+    assert masked_m["near_exact_fraction"] > unmasked_m["near_exact_fraction"]
+    assert abs(masked_m["ssim"] - 1.0) < 1e-9, "identical content in the unmasked region should score perfectly"
 
     unrelated_m = compare(base, unrelated)
     assert unrelated_m["ssim"] < 0.3

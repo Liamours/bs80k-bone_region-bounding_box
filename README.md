@@ -24,4 +24,4 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ## Status
 
-Template matching locates 20 of 26 region types essentially exactly once background pixels are excluded from the match. One region group is close but not pixel exact for an understood reason, its own crop is not a plain rectangle. One region group, shoulder, is still unreliable and not yet fixed.
+Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. One region group, shoulder, is still unreliable and not yet fixed.

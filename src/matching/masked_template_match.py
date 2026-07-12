@@ -49,12 +49,14 @@ for name in FOLDERS:
         m = locate(crop, whole, mask=mask)
         window = whole[m["y"]:m["y"] + m["h"], m["x"]:m["x"] + m["w"]]
         metrics = compare(crop, window)
+        masked_metrics = compare(crop, window, mask=mask)
 
         rows.append({
             "component": name, "id": i, "x": m["x"], "y": m["y"],
             "background_fraction": float((mask == 0).mean()),
             "match_score": m["score"], "peak_margin": m["peak_margin"],
             **metrics,
+            **{f"{k}_masked_eval": v for k, v in masked_metrics.items()},
         })
 
 df = pd.DataFrame(rows)
@@ -66,6 +68,8 @@ summary = df.groupby("component").agg(
     peak_margin_mean=("peak_margin", "mean"),
     near_exact_fraction_mean=("near_exact_fraction", "mean"),
     ssim_mean=("ssim", "mean"),
+    near_exact_fraction_masked_eval_mean=("near_exact_fraction_masked_eval", "mean"),
+    ssim_masked_eval_mean=("ssim_masked_eval", "mean"),
 ).reset_index()
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
