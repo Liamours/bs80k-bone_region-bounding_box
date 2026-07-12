@@ -30,6 +30,19 @@ FOLDERS = [
     "vertbraANT", "vertbraPOST",
 ]
 
+def second_peak_score(result: np.ndarray, x: int, y: int, w: int, h: int) -> float:
+    """Best score elsewhere in the correlation surface, best peak's own footprint suppressed.
+
+    A plain second-highest value would just be a pixel next to the best peak, correlation
+    surfaces are smooth. Suppressing a window the size of the template around the best match
+    removes that smooth peak, leaving the next genuinely different candidate location.
+    """
+    suppressed = result.copy()
+    ry, rx = h // 2, w // 2
+    suppressed[max(0, y - ry):y + ry + 1, max(0, x - rx):x + rx + 1] = -np.inf
+    return float(suppressed.max()) if np.isfinite(suppressed).any() else float("nan")
+
+
 shared_ids = sorted({int(p.stem) for p in (RAW / FOLDERS[0]).glob("*.jpg")})
 ids = random.Random(0).sample(shared_ids, N)
 
@@ -44,17 +57,23 @@ for name in FOLDERS:
 
         result = cv2.matchTemplate(whole, crop, cv2.TM_CCOEFF_NORMED)
         _, score, _, (x, y) = cv2.minMaxLoc(result)
+        second_score = second_peak_score(result, x, y, w, h)
 
         window = whole[y:y + h, x:x + w]
         metrics = compare(crop, window)
 
-        rows.append({"component": name, "id": i, "x": x, "y": y, "match_score": score, **metrics})
+        rows.append({
+            "component": name, "id": i, "x": x, "y": y,
+            "match_score": score, "second_score": second_score, "peak_margin": score - second_score,
+            **metrics,
+        })
 
 df = pd.DataFrame(rows)
 
 summary = df.groupby("component").agg(
     n=("id", "count"),
     match_score_mean=("match_score", "mean"),
+    peak_margin_mean=("peak_margin", "mean"),
     near_exact_fraction_mean=("near_exact_fraction", "mean"),
     ssim_mean=("ssim", "mean"),
     pearson_corr_mean=("pearson_corr", "mean"),

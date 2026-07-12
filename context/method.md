@@ -129,12 +129,25 @@ The 20-sample means split cleanly into three groups, not one uniform result:
 
 - ankle, elbow, head, knee, pelvis (18 of 26 folders): near-exact fraction 1.0 and ssim above 0.98 in every one of these components, the plain baseline finds the exact source location essentially every time
 - vertebra (2 folders): near-exact fraction 0.62-0.64, ssim 0.68-0.73, consistently in the right place but not pixel-exact, matches the contour based, non-rectangular extraction already noted above
-- chest, shoulder (6 folders): near-exact fraction 0.34-0.49, ssim 0.17-0.36, clearly worse than every other region, not explained by evidence in hand yet. These are also the two regions BS-80K's own paper never explicitly assigns a borderline step to, only reference points, see "How the crops were actually made" above, and ref 37 describes shoulder specifically as a small polygon rather than a rectangle, see "How each region boundary is derived" above. A polygon shaped crop, if BS-80K's pipeline preserves that shape rather than using a plain bounding rectangle, would explain a weaker rectangle-vs-rectangle match score, this is a plausible reading of evidence already in this file, not a confirmed cause for BS-80K specifically
+- chest, shoulder (6 folders): near-exact fraction 0.34-0.49, ssim 0.17-0.36, clearly worse than every other region
+
+## Second peak margin, telling shape mismatch apart from a genuinely ambiguous search
+
+`second_peak_score` in `src/matching/baseline_template_match.py` suppresses a template sized window around the best match in the correlation surface, then takes the best remaining value elsewhere in the image. `peak_margin` is the best score minus that value, a small margin means other locations in the whole body image score nearly as well as the one picked, a large margin means the picked location stands out clearly.
+
+Real numbers from the same 20-id run, mean peak_margin per component:
+
+- ankle, elbow, head, knee, pelvis: 0.23-0.63, comfortably separated
+- vertebra: 0.26-0.45, also comfortably separated, in the same range as the clean regions above
+- chest: 0.03-0.05
+- shoulder: 0.02-0.03, the smallest margin of any region by a wide margin itself
+
+This separates two different problems that looked similar from ssim alone. Vertebra has a clear, unambiguous peak, its imperfect pixel match is a shape problem, the crop itself is not a rectangle, so a rectangular window can never score perfectly even at the right location, consistent with the contour based extraction already noted above. Chest and shoulder have no clear peak at all, the best scoring location is barely better than other candidates elsewhere in the same whole body image. That points to genuine search ambiguity, plausibly repetitive rib or torso texture producing several similarly scoring locations, rather than, or in addition to, a shape mismatch. The earlier note in this file guessing a polygon shaped crop as the likely cause undersold this, a low peak margin would happen even for a correctly shaped rectangular crop if the surrounding content is repetitive enough that plain pixel correlation cannot tell candidate locations apart.
 
 ## Open questions
 
-- Why chest and shoulder score much lower than every other region on the baseline above, worth checking a few of these matches by eye before assuming a cause
-- What match score threshold separates a correct match from a wrong one: the baseline above gives real numbers, near-exact fraction and ssim near 1.0 for 18 of 26 folders, a real spread from 0.34 to 0.64 for the other 8, still provisional, not yet checked case by case against ground truth since none exists, only against the metrics themselves
+- What actually fixes chest and shoulder: a low peak margin means the search itself is ambiguous over the full whole body image, the likely next step is constraining where `matchTemplate` is allowed to look, for example the expected vertical band for shoulder or chest from ref 37's own reference point positions, rather than a different matching algorithm over the same full search area, not tried yet
+- What match score threshold separates a correct match from a wrong one: the baseline above gives real numbers, near-exact fraction and ssim near 1.0 for 18 of 26 folders, a real spread from 0.34 to 0.64 for the other 8, still provisional, not yet checked case by case against ground truth since none exists, only against the metrics themselves and now peak_margin
 - What format to write the output box in, not decided yet
 - How shoulder, chest, and pelvis box edges are actually set: ref 37 answers this in outline for shoulder/thorax and for pelvis, see the sections above, both use several reference points rather than a plain axis aligned box, the exact scan direction for the four shoulder/thorax boundary points is still ambiguous in ref 37's own text, and ref 37 does not confirm whether pelvis crops use I_org or I_fuzzy pixels in the final output, see "Original vs preprocessed pixels in the final crop" above
 - Whether BS-80K's own pipeline follows ref 37's 46 region breakdown exactly or merges/drops sub-regions before producing its own 26 folders, not confirmed, see the mapping section above, "ankle" specifically has no named counterpart in ref 37
