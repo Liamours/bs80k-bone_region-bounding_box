@@ -24,4 +24,4 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ## Status
 
-A plain template matching baseline is in and tested on a sample across every region. It locates 18 of 26 region types essentially exactly, one region group is close but not pixel exact as expected, and two are clearly weaker and not yet explained.
+Template matching locates 20 of 26 region types essentially exactly once background pixels are excluded from the match. One region group is close but not pixel exact for an understood reason, its own crop is not a plain rectangle. One region group, shoulder, is still unreliable and not yet fixed.
