@@ -1,0 +1,340 @@
+[
+  {
+    "image": "wholeBodyPOST/1318.jpg",
+    "region": "pelvis",
+    "view": "POST",
+    "bbox": [
+      69,
+      286,
+      114,
+      100
+    ],
+    "diagnosis": "abnormal",
+    "caption_description": "This is an image of a radionuclide bone scan of the patient's pelvis.",
+    "caption_diagnosis": "This image shows the patient's pelvis as a tracer uptake enhancement shadow.",
+    "hotspots": [
+      {
+        "bbox": [
+          120,
+          290,
+          5,
+          5
+        ],
+        "class": "Abnormal"
+      }
+    ],
+    "qa": [
+      {
+        "question": "Where is the patient's pelvis in this bone scan?",
+        "answer_bbox": [
+          69,
+          286,
+          114,
+          100
+        ]
+      },
+      {
+        "question": "Does the patient's pelvis show abnormal tracer uptake?",
+        "answer": "Yes",
+        "answer_text": "This image shows the patient's pelvis as a tracer uptake enhancement shadow."
+      },
+      {
+        "question": "Where is the abnormal tracer uptake in the patient's pelvis?",
+        "answer_bboxes": [
+          [
+            120,
+            290,
+            5,
+            5
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "image": "wholeBodyPOST/1761.jpg",
+    "region": "chest_R",
+    "view": "POST",
+    "bbox": [
+      117,
+      132,
+      70,
+      160
+    ],
+    "diagnosis": "normal",
+    "caption_description": "This is an image of a radionuclide bone scan of the patient's right chest.",
+    "caption_diagnosis": "This image does not show an abnormally dense, sparse, or absent shadow of the patient's right chest skeletal tracer.",
+    "hotspots": [
+      {
+        "bbox": [
+          108,
+          138,
+          19,
+          31
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          172,
+          143,
+          29,
+          18
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          110,
+          175,
+          17,
+          17
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          109,
+          196,
+          16,
+          9
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          108,
+          207,
+          19,
+          9
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          109,
+          219,
+          19,
+          10
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          123,
+          232,
+          7,
+          6
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          110,
+          250,
+          21,
+          13
+        ],
+        "class": "Abnormal"
+      },
+      {
+        "bbox": [
+          108,
+          268,
+          25,
+          24
+        ],
+        "class": "Abnormal"
+      }
+    ],
+    "qa": [
+      {
+        "question": "Where is the patient's right chest in this bone scan?",
+        "answer_bbox": [
+          117,
+          132,
+          70,
+          160
+        ]
+      },
+      {
+        "question": "Does the patient's right chest show abnormal tracer uptake?",
+        "answer": "No",
+        "answer_text": "This image does not show an abnormally dense, sparse, or absent shadow of the patient's right chest skeletal tracer."
+      },
+      {
+        "question": "Where is the abnormal tracer uptake in the patient's right chest?",
+        "answer_bboxes": [
+          [
+            108,
+            138,
+            19,
+            31
+          ],
+          [
+            172,
+            143,
+            29,
+            18
+          ],
+          [
+            110,
+            175,
+            17,
+            17
+          ],
+          [
+            109,
+            196,
+            16,
+            9
+          ],
+          [
+            108,
+            207,
+            19,
+            9
+          ],
+          [
+            109,
+            219,
+            19,
+            10
+          ],
+          [
+            123,
+            232,
+            7,
+            6
+          ],
+          [
+            110,
+            250,
+            21,
+            13
+          ],
+          [
+            108,
+            268,
+            25,
+            24
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "image": "wholeBodyANT/341.jpg",
+    "region": "head",
+    "view": "ANT",
+    "bbox": [
+      101,
+      46,
+      58,
+      74
+    ],
+    "diagnosis": "abnormal",
+    "caption_description": "This is an image of a radionuclide bone scan of a patient's head.",
+    "caption_diagnosis": "This image shows a tracer uptake of the patient's head in an elevated shadow.",
+    "hotspots": [
+      {
+        "bbox": [
+          139,
+          97,
+          7,
+          8
+        ],
+        "class": "Abnormal"
+      }
+    ],
+    "qa": [
+      {
+        "question": "Where is the patient's head in this bone scan?",
+        "answer_bbox": [
+          101,
+          46,
+          58,
+          74
+        ]
+      },
+      {
+        "question": "Does the patient's head show abnormal tracer uptake?",
+        "answer": "Yes",
+        "answer_text": "This image shows a tracer uptake of the patient's head in an elevated shadow."
+      },
+      {
+        "question": "Where is the abnormal tracer uptake in the patient's head?",
+        "answer_bboxes": [
+          [
+            139,
+            97,
+            7,
+            8
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "image": "wholeBodyANT/2052.jpg",
+    "region": "vertebrae",
+    "view": "ANT",
+    "bbox": [
+      116,
+      168,
+      30,
+      181
+    ],
+    "diagnosis": "normal",
+    "caption_description": "This is an image of a radionuclide bone scan of a patient's vertebrae.",
+    "caption_diagnosis": "This image does not show an abnormally dense, sparse, or absent image of the patient's vertebrae skeletal tracer.",
+    "hotspots": [],
+    "qa": [
+      {
+        "question": "Where is the patient's vertebrae in this bone scan?",
+        "answer_bbox": [
+          116,
+          168,
+          30,
+          181
+        ]
+      },
+      {
+        "question": "Does the patient's vertebrae show abnormal tracer uptake?",
+        "answer": "No",
+        "answer_text": "This image does not show an abnormally dense, sparse, or absent image of the patient's vertebrae skeletal tracer."
+      }
+    ]
+  },
+  {
+    "image": "wholeBodyPOST/2148.jpg",
+    "region": "elbow_L",
+    "view": "POST",
+    "bbox": [
+      24,
+      305,
+      47,
+      40
+    ],
+    "diagnosis": "normal",
+    "caption_description": "This is an image of a radionuclide bone scan of the patient's left elbow joint.",
+    "caption_diagnosis": "This image does not show an abnormally dense, sparse, or absent shadow of the patient's left elbow joint skeletal tracer.",
+    "hotspots": [],
+    "qa": [
+      {
+        "question": "Where is the patient's left elbow joint in this bone scan?",
+        "answer_bbox": [
+          24,
+          305,
+          47,
+          40
+        ]
+      },
+      {
+        "question": "Does the patient's left elbow joint show abnormal tracer uptake?",
+        "answer": "No",
+        "answer_text": "This image does not show an abnormally dense, sparse, or absent shadow of the patient's left elbow joint skeletal tracer."
+      }
+    ]
+  }
+]
