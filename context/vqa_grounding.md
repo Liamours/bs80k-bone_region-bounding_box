@@ -166,3 +166,11 @@ choice, not oversight.
 `split_dataset.py` re-run unchanged, still patient id level, now spans all 3247 ids (whole_body
 records exist for every id, not just the 2925 with region crops): 65956 train / 8268 val / 8320
 test rows, zero id overlap confirmed again, sums to 82544 exactly.
+
+whole_body records also carry `outlier`/`anomaly_score` straight from
+`bs80k-wholebody-bb/bounding_boxes.csv`, not dropped, not excluded from the dataset. Decided
+this the same way `low_precision_region`/`region_overlap` were decided in v2: the flag mixes two
+different things, genuinely bad source images and legitimately small real patients
+(`context/wholebody_bbox.md`'s own visual check found both in the same flagged tail), so
+dropping every flagged row would silently remove real, usable scans along with the bad ones. A
+consumer that only wants the bad-image kind still has to look, the flag only narrows down where.

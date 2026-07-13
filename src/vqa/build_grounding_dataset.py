@@ -198,7 +198,15 @@ def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
     canvas, context/wholebody_bbox.md) rather than one region's location inside the whole body
     image. No caption_description/caption_diagnosis here, LIBS-160K has no whole body caption
     template to borrow, only region ones, inventing one would break the exact reuse this
-    project has held to for every other caption field."""
+    project has held to for every other caption field.
+
+    outlier/anomaly_score carry over the IsolationForest flag as-is, same "flag, never drop"
+    convention as low_precision_region/region_overlap on region rows. That flag mixes two
+    different things, genuinely bad source images and legitimately small real patients
+    (context/wholebody_bbox.md's own visual check found both), so dropping flagged rows would
+    silently remove real, usable scans along with the bad ones. A consumer that wants only the
+    bad-image kind still has to look, this just narrows down where.
+    """
     pid, view = int(row["id"]), row["view"]
     bbox = [int(row["x"]), int(row["y"]), int(row["width"]), int(row["height"])]
     diagnosis = wb_labels[(pid, view)]
@@ -220,6 +228,8 @@ def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
         "bbox": bbox,
         "diagnosis": diagnosis,
         "hotspots": hotspots,
+        "outlier": bool(row["outlier"]),
+        "anomaly_score": float(row["anomaly_score"]),
         "qa": qa,
     }
 
