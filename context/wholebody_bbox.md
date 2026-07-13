@@ -112,6 +112,28 @@ Columns: `id`, `view`, `x`, `y`, `width`, `height`, the 7 features (`coverage`,
 `aspect_ratio`, `center_x_offset`, `top_margin_frac`, `bottom_margin_frac`, `width_frac`,
 `height_frac`), `fallback`, `outlier`, `anomaly_score`, `has_region_crops`.
 
+## Extended with LIBS-160K's own extra patients
+
+Checked directly, full scale, not assumed: LIBS-160K's `wholeANT`/`wholePOST` classification
+folders are byte identical to BS-80K's own `wholeBodyANT`/`wholeBodyPOST` for every one of the
+3247 shared ids on both views, and LIBS-160K's Abnormal/Normal folder placement agrees with
+BS-80K's own txt label 100% of the time. Not independent data, a repackaging of BS-80K's own
+whole body layer (`context/libs160k.md`).
+
+Beyond those 3247, LIBS-160K has 3491 more ids per view that BS-80K does not have at all, real
+new patients. `generate_wholebody_bounding_boxes.py` now runs the same bbox method (threshold 2,
+pad 5px) on those too, one `IsolationForest` per view fit across the combined 6738-id population
+so outlier scores stay on the same scale for both sources, rather than two separately normalized
+models. `bounding_boxes.csv` grew from 6494 to 13476 rows, gained a `source` column
+(`bs80k`/`libs160k`), `has_region_crops` is trivially false for every `libs160k` row (they were
+never BS-80K patients, no region crop folders exist for them).
+
+Outlier rate split cleanly by source once fit on the combined population: bs80k rows, 10.3% both
+views; libs160k-only rows, 0.09% ANT, 0.0% POST. The new patients are almost never flagged, the
+outlier detector is still concentrating on BS-80K's own already-known problem population (the
+322 excluded ids and friends), not spuriously flagging the new cohort, a reassuring sign the
+method generalizes rather than just fitting noise in the original population.
+
 ## Not done yet
 
 - Outliers are flagged, not yet split into "bad image" versus "real small body," that still
