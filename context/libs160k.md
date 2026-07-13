@@ -51,7 +51,19 @@ None of this changes the earlier read that LIBS-160K's region taxonomy and norma
 
 ## What this means for a combined dataset
 
-Not built yet, this is a probe, not a design. The region taxonomy lines up closely enough with bs80k's own 13 part and side combinations that combining the two is plausible, and the one directly checked image size matches this project's own chest crop size closely. What LIBS-160K does not have, based on what was read here, is anything resembling a bounding box or a location within a larger image, its images already arrive as small region crops with a caption, same as bs80k's own region crop folders before this project's own bounding box work. Whether LIBS-160K's images are literally sourced from bs80k or a related but separate collection is not confirmed, not checked further here.
+Not built yet, this is a probe, not a design. The region taxonomy lines up closely enough with bs80k's own 13 part and side combinations that combining the two is plausible, and the one directly checked image size matches this project's own chest crop size closely. What LIBS-160K does not have, based on what was read here, is anything resembling a bounding box or a location within a larger image, its images already arrive as small region crops with a caption, same as bs80k's own region crop folders before this project's own bounding box work.
+
+Whether LIBS-160K's images are literally sourced from bs80k: now confirmed, not an open question anymore (`context/wholebody_bbox.md`). LIBS-160K's own `wholeANT`/`wholePOST` whole body classification images are byte identical to bs80k's own `wholeBodyANT`/`wholeBodyPOST` for every one of the 3247 shared ids, checked at full scale, and its Abnormal/Normal label agrees with bs80k's own txt label 100% of the time. Beyond those 3247, LIBS-160K has 3491 more whole body ids per view that bs80k does not have at all, real new patients, not a different collection reused under new numbers.
+
+## The region-crop layer also extends to LIBS-160K's new patients, confirmed by template matching
+
+A back of envelope count first suggested this: LIBS-160K's region-crop tsv/jsonl total is 192456 rows, 2.53x too many to be explained by bs80k's own 2925 region-crop patients alone (2925 x 26 = 76050), but close to LIBS-160K's own claimed 6586 patients (6586 x 26 = 171236).
+
+Checked directly, on pixels, not just row counts: took one crop from 5 different region captions (head, pelvis, left ankle joint, right knee joint, vertebrae), template matched each against the full combined 13476-candidate whole body pool (bs80k plus libs160k-only, both views, `bs80k-wholebody-bb/bounding_boxes.csv`), same masked `matchTemplate` approach this project has used throughout. All 5 found a real match (score 0.83-0.92, peak margin 0.17-0.49, a real, unambiguous peak, not noise), and 3 of those were visually confirmed side by side (`result/figures/libs_region_mapping_check.png`), the anatomical pattern, kneecap position, spine node position, pelvis shape, lines up between the LIBS crop and the located region essentially exactly, the lower score than this project's usual 0.99+ is LIBS-160K's own images being visibly grainier, not a weak match.
+
+2 of the 3 visually confirmed matches (right knee joint, vertebrae) landed inside a `libs160k`-only whole body image, not one of bs80k's own known 2925. The region-crop layer genuinely extends to the new patients, this is not just a caption-vocabulary asset, it is a real, recoverable spatial anchor for a population beyond bs80k's own.
+
+The scaling problem this creates: one crop against the full 13476-candidate pool took 3-5 minutes. LIBS-160K has 192456 region-crop rows total, brute forcing all of them the same way would take on the order of two years of compute, not feasible as is. Recovering this at any real scale needs a smarter approach than searching every crop against every candidate, not attempted yet, a real next decision, not a detail.
 
 ## Planned approach, borrowed from MedGround
 
