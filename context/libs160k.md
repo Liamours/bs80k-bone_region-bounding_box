@@ -97,6 +97,48 @@ valid_imgs.tsv) together, not each in isolation:
 elbowRPOST duplication affecting 99.7% of patients, and 4 pairs of bs80k patient ids that read as
 the same real patient entered twice.
 
+## Multi-step duplicate check, phase 2: Perceptual Hash (pHash) closes the gap phase 1 left
+
+Phase 1 (MD5) found 0 exact cross-dataset region-crop matches despite confirmed real overlap,
+expected, LIBS-160K's own region crops are visibly reprocessed (`result/figures/libs_region_mapping_check.png`).
+Phase 2, `src/dedup/phase2_phash.py`: **Perceptual Hash (pHash, DCT-based, 64 bit, `imagehash`
+package, `hash_size=8`)**, grouped by region (13 codes, both bs80k views combined per region,
+all 3 LIBS-160K splits combined per region) rather than one 76050 x 192456 matrix, since the
+region is already known on both sides (bs80k's own folder, LIBS-160K's own caption group).
+
+The Hamming distance threshold was calibrated, not guessed. A first pass at <= 8 on chestR alone
+flagged 169103 pairs, suspiciously many for one region. Checked 5 flagged pairs directly against
+this project's own already-verified ground truth, this project's own recovered box location for
+that bs80k id (`bounding_boxes.csv`), by template matching the LIBS crop against the actual
+bs80k whole body image and comparing the located (x, y) to the known box:
+
+- distance 0: located at the exact known box location, offset (0, 0), template match score 0.69
+- distance 2: exact, offset (0, 0), score 0.77
+- distance 4: exact, offset (0, 0), score 0.73
+- distance 6: off by (38, 514) pixels, score 0.57, near zero peak margin, a coincidental hash
+  collision, not a real match
+- distance 8: off by dozens of pixels, score 0.46, same story
+
+Settled on **Hamming distance <= 4** as the threshold, confirmed reliable, not assumed.
+`result/figures/phash_verification_check.png` has the visual side of the distance 0 and 8 cases.
+
+Full 13-region sweep, that threshold: **114456 cross-dataset near-duplicate pairs**, 33788 total
+bs80k-id/region matches (one bs80k id can match in more than one region). Coverage (fraction of
+bs80k's 2925 patients matched into LIBS-160K) is not uniform across regions:
+
+- chest, shoulder, pelvis, vertebrae, head: 92.9-94.8% coverage, median best-distance across the
+  whole region population sits right at the confirmed-reliable value of 4
+- knee, ankle: 88.9-91.1% coverage, median best-distance 6, a value this project's own
+  calibration check found unreliable, so these numbers are coverage of the region generally, not
+  a claim every one of those matches is individually as trustworthy as chest's
+- elbow: 66.7-68.3% coverage, clearly lower, median best-distance 8. Ties back to
+  `context/dataset.md`'s own finding that `elbowLPOST` is byte identical to `elbowRPOST` for
+  99.7% of bs80k patients, elbow crops carry less individually distinguishing detail than other
+  regions, consistent with both findings, not a coincidence.
+
+Full detail (all 114456 pairs, per-region summary) is in
+`result/tables/dataset_duplication_and_regions.xlsx`, sheet "Duplicate Detail (pHash)".
+
 ## Planned approach, borrowed from MedGround
 
 For later, not implemented yet. MedGround, Bridging the Evidence Gap in Medical Vision-Language Models with Verified Grounding Data, Zhang, Wu, Luo, Wang, Lv, submitted January 2026, https://arxiv.org/abs/2601.06847, general medical imaging, not chest X-ray specific, describes an automated pipeline turning existing segmentation resources into grounding data. Per its own abstract, read directly, not secondhand: expert segmentation masks serve as spatial anchors, the pipeline extracts localization targets, shape cues, and spatial information from those masks, a vision-language model generates natural, clinically grounded queries reflecting morphology and location, then a multi-stage verification step, formatting checks, geometry and medical rules, and visual judging, filters out inadequate samples before they enter the final dataset, named MedGround-35K, 35000 samples. Only the abstract has been read, not the full method, this is what is confirmed so far.
