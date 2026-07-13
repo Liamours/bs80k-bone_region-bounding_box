@@ -174,3 +174,31 @@ different things, genuinely bad source images and legitimately small real patien
 (`context/wholebody_bbox.md`'s own visual check found both in the same flagged tail), so
 dropping every flagged row would silently remove real, usable scans along with the bad ones. A
 consumer that only wants the bad-image kind still has to look, the flag only narrows down where.
+
+## v4: every known duplicate finding noted on the data itself, nothing deleted
+
+Explicit instruction: note everything about the phase 1/phase 2 duplicate findings
+(`context/dataset.md`, `context/libs160k.md`) directly on the data, do not delete or merge
+anything. `src/dedup/add_duplicate_notes.py` adds three additive columns to
+`bounding_boxes.csv` (never touches row count, 76050 before and after):
+
+- `duplicate_of_patient_id`: set on 192 rows, the 4 cross-patient duplicate pairs x 2 ids x the
+  24 of 26 components actually confirmed identical (elbowLPOST/elbowRPOST excluded, see next)
+- `duplicate_of_sibling_component`: set on 5834 rows (2917 patients x 2), elbowLPOST and
+  elbowRPOST pointing at each other, a same-patient duplicate, a different kind of finding than
+  the row above, not a different real person
+- `libs160k_duplicate_matches`: set on 62014 of 76050 rows, semicolon joined
+  `split/image_id(hamming distance)` from the phase 2 pHash sweep
+
+`build_grounding_dataset.py` carries all three straight through onto region records unchanged
+(`None`/`[]` when absent). Fixing this required fixing a real, separate bug found only by
+re-running the generator for the first time since whole body bbox was extended to LIBS-160K's
+new patients (v3 above): `load_wholebody_labels()` only read bs80k's own txt label files, so any
+`libs160k`-only whole body id crashed with a `KeyError`. Fixed by falling back to LIBS-160K's own
+Abnormal/Normal folder placement for ids bs80k has no label file for, the same signal already
+checked byte identical and 100% label-agreeing for every id bs80k does have
+(`context/libs160k.md`). This also means `grounding_qa.jsonl`'s `whole_body` records were stale
+since that earlier extension, only 6494 of them instead of the full 13476, silently missing
+every LIBS-160K-only patient until this run. Now 89526 total records (76050 region + 13476
+whole_body), splits regenerated (71126 train / 9382 val / 9018 test, 6738 patient ids, zero id
+overlap reconfirmed).

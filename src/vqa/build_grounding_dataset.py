@@ -163,6 +163,9 @@ def build_record(row, caption_lookup, nidus_boxes, region_boxes) -> dict:
         qa.append({"question": f"Where is the abnormal tracer uptake in the patient's {phrase}?",
                    "answer_bboxes": [h["bbox"] for h in hotspots]})
 
+    dup_patient = row.get("duplicate_of_patient_id")
+    dup_sibling = row.get("duplicate_of_sibling_component")
+    libs_dup = row.get("libs160k_duplicate_matches")
     return {
         "image": f"wholeBody{view}/{int(row['id'])}.jpg",
         "region": region_code,
@@ -174,14 +177,28 @@ def build_record(row, caption_lookup, nidus_boxes, region_boxes) -> dict:
         "hotspots": hotspots,
         "low_precision_region": region_code in LOW_PRECISION_REGIONS,
         "region_overlap": region_overlap,
+        "duplicate_of_patient_id": int(dup_patient) if pd.notna(dup_patient) else None,
+        "duplicate_of_sibling_component": dup_sibling if pd.notna(dup_sibling) else None,
+        "libs160k_duplicate_matches": libs_dup.split(";") if pd.notna(libs_dup) else [],
         "qa": qa,
     }
 
 
+def safe_int(stem: str) -> int | None:
+    try:
+        return int(stem)
+    except ValueError:
+        return None  # duplicate-download artifacts like "972(1)", skipped
+
+
 def load_wholebody_labels() -> dict[tuple[int, str], str]:
-    """(id, view) -> "normal"/"abnormal", same txt convention as every region folder
-    (context/dataset.md), wholeBodyANT.txt/wholeBodyPOST.txt label the whole image, not one
-    region: abnormal if any nidus box exists anywhere in it."""
+    """(id, view) -> "normal"/"abnormal". bs80k ids: wholeBodyANT.txt/wholeBodyPOST.txt label
+    the whole image, not one region, abnormal if any nidus box exists anywhere in it
+    (context/dataset.md). libs160k-only ids (bs80k-wholebody-bb/bounding_boxes.csv's own
+    source="libs160k" rows, context/wholebody_bbox.md) have no such txt file, since they were
+    never bs80k patients, LIBS-160K's own Abnormal/Normal folder placement is the label instead,
+    the same signal, checked byte identical and 100% label-agreeing for every bs80k id that has
+    both (context/libs160k.md)."""
     labels = {}
     for view, folder in [("ANT", "wholeBodyANT"), ("POST", "wholeBodyPOST")]:
         txt_path = RAW / folder / f"{folder}.txt"
@@ -189,6 +206,14 @@ def load_wholebody_labels() -> dict[tuple[int, str], str]:
             filename, label = line.strip().split("\t")
             pid = int(filename.removesuffix(".jpg"))
             labels[(pid, view)] = "abnormal" if label == "1" else "normal"
+
+    for view in ("ANT", "POST"):
+        libs_dir = LIBS.parent / f"whole{view}"
+        for diagnosis, folder_name in [("abnormal", "Abnormal"), ("normal", "Normal")]:
+            for p in (libs_dir / folder_name).glob("*.jpg"):
+                pid = safe_int(p.stem)
+                if pid is not None and (pid, view) not in labels:
+                    labels[(pid, view)] = diagnosis
     return labels
 
 
@@ -237,7 +262,7 @@ def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
 def main():
     caption_lookup = load_caption_lookup()
     nidus_boxes = load_nidus_boxes()
-    df = pd.read_csv(BB_CSV)
+    df = pd.read_csv(BB_CSV, low_memory=False)
     region_boxes = build_region_boxes(df)
     wb_df = pd.read_csv(WB_CSV)
     wb_labels = load_wholebody_labels()
