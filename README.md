@@ -28,6 +28,16 @@ Image size, pixel value, and crop-to-whole-body size ratio, across all region an
 
 ![predicted region bounding boxes over whole body scans](result/figures/bounding_box_preview.png)
 
+## Quality metrics
+
+Mean of each per row pixel metric, 2925 predictions per component (`src/eval/quality_table.py`, full table in [result/figures/bounding_box_quality.md](result/figures/bounding_box_quality.md)). near exact and ssim are the headline numbers, the rest diagnose why.
+
+| component | near exact | ssim | match score |
+|---|---|---|---|
+| every region except shoulder (24 of 26) | ~1.00 | ~0.996-0.999 | ~0.994-0.999 |
+| shoulder, anterior (2 of 26) | ~0.243 | ~0.567-0.574 | ~0.563-0.569 |
+| shoulder, posterior (2 of 26) | ~0.245 | ~0.578-0.595 | ~0.558-0.573 |
+
 ## Status
 
 Template matching locates 24 of 26 region types essentially exactly, once the search excludes background where needed and evaluation always does. Shoulder, the remaining region type, anchors its search on the already-matched vertebra position rather than searching the whole image, cutting its failure rate roughly in half to two thirds, anterior view is now close to every other region, posterior view is improved but still elevated. Run across the full dataset, 76050 predictions.
