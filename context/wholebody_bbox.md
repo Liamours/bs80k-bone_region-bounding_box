@@ -154,7 +154,49 @@ real scans with an unusual pose or crop, is a genuinely fuzzy problem this one f
 solve, it narrows the human review queue, it does not replace it. Never drops a row, same
 convention as `outlier` itself.
 
+## Region boxes for LIBS-160K's new-only patients: first sample attempt, not reliable, do not use
+
+`src/wholebody/build_libs_new_patient_region_boxes.py` ran a bounded sample (8 new patients x 13
+regions) matching residual (not already phase 2 matched) LIBS-160K crops against each patient's
+own whole body image, saved to `bs80k-bone_region-bb/libs160k_new_patient_sample.csv`. Checked
+before trusting it, not after: 33 of the 104 rows (31.7%) share the exact same matched LIBS crop
+across more than one different target patient, a logical impossibility if the match were real,
+one crop cannot be two different people's ankle.
+
+Verified directly, not just by the count, `result/figures/suspicious_shared_match_check.png`:
+the `ankleR` crop claimed by 6 of 8 patients (`test/9387`) is a near blank crop, foreground
+coverage 0.006, matches essentially anywhere with a high score since there is almost no real
+content to match against wrongly, "located" at three completely different, anatomically
+nonsensical positions (knee height, the other leg, up near the head) across three of its six
+claimants. A second, different failure mode explains the other repeat offenders (`shoL` x5,
+`chestL` x4, `vertbra` x4 patients): all three sit at foreground coverage 1.000, fully saturated,
+no black background at all, so masking cannot help discriminate, and a small low detail crop can
+correlate similarly well against many different real patients. `shoL` specifically being weak is
+consistent with, not a contradiction of, this project's own extensively documented shoulder
+precision problem elsewhere in this file and in `context/method.md`.
+
+Root cause: the script had no data quality pre-filter on candidate crops (near blank or fully
+saturated crops should be rejected before searching, not after), and no cross-candidate margin
+(best score against the second-best competing crop's own score, not just the second-peak
+suppression margin used everywhere else in this project, which only checks for a second peak
+*within* one search, not against other candidate crops). A single absolute score threshold
+(0.5) was not strict enough to catch either failure mode, mean peak_margin for the 33 bad rows
+(0.105) barely differs from the 71 unshared rows (0.130).
+
+Even the 71 unshared rows are not confirmed correct, only not caught by this one check. Unlike
+bs80k's own population, there is no independent ground truth to verify a new patient's box
+against, the cross-check this project used everywhere else (comparing a found location to this
+project's own already-recovered box) does not exist for a patient bs80k never had. Treat this
+whole sample as a proof that the approach is directionally possible, not as usable output.
+`libs160k_new_patient_sample.csv` should not be joined into any deliverable as is.
+
 ## Not done yet
+
+- Fix `build_libs_new_patient_region_boxes.py`: reject near blank and fully saturated candidate
+  crops before searching, add a cross-candidate margin (best vs second-best competing crop) and
+  require it to be large before accepting a match, then re-run the sample and, if it holds up,
+  decide on scaling beyond the 8 patient proof of concept. Not done yet, a real compute cost
+  (the first run took about 2 hours for 8 patients), a decision for later, not a default
 
 - The ambiguous middle between "confirmed corrupt" and "confirmed real," roughly 96% of flagged
   outliers, still needs a human look, no further automated signal attempted yet
