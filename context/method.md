@@ -338,10 +338,41 @@ Fig. 15 shows all 23 regions on both views at once, and this is the more useful 
 
 This gives a paper grounded reading of the precision problem above, not just a numeric one. Shoulder is hard not because of a search bug, but because it sits at a boundary between several other structures rather than being an anatomically distinctive thing on its own, consistent with the low signal fraction, the padded edge, and precision that does not sharpen even once the search is in the right neighborhood.
 
+## Shoulder precision, revisited and closed as an accepted limitation
+
+Revisited deliberately before accepting this, not by default. Every approach tried against
+shoulder's remaining precision problem lives in one family, appearance based search and masking:
+plain matchTemplate, head-to-pelvis banding, fixed and percentile background masks at several
+levels, masked evaluation, rigid rotation and uniform scale search, and vertebra anchored
+banding. All either made shoulder worse or, for the one real improvement, fixed the outlier
+*rate* (wrong neighborhood entirely) without moving the *precision* within a correctly found
+neighborhood, near-exact fraction stays around 0.24 regardless. That is the whole family
+exhausted, not a partial attempt.
+
+The two remaining candidate directions are not search tweaks, they are different problem framings:
+
+1. A geometric or statistical prior, predicting shoulder's box from already reliable anchors
+   (vertebra, head, pelvis) via a fitted relationship rather than searching image content at all.
+   Not tried because there is no ground truth to fit against, shoulder itself is the unsolved
+   region, there is nothing to regress onto.
+2. A non rectangular output for shoulder specifically, since ref 37's own method defines it as a
+   small polygon bounded by an apex point, not an axis aligned box, "Looking at ref 37's own
+   figures directly" above. A rectangular box may be structurally the wrong shape to fully
+   capture this region regardless of how well it is located.
+
+Neither is a quick experiment, both are a real change in what the deliverable is (a fitted prior
+with no target to fit, or a different output geometry breaking consistency with all 25 other
+region boxes). Given the project's own scope is bounding boxes, closing this here: shoulder
+precision (near-exact fraction ~0.24, ssim ~0.56-0.60 vs ~1.0 elsewhere) is an accepted, well
+evidenced limitation of the rectangular template matching approach, not a bug still being
+chased. The vertebra anchored search band remains the production approach, it fixed the larger
+problem, wrong neighborhood entirely, substantially, 13-31% outlier rate down to 4.2-12.3%. The
+posterior view's own remaining gap over anterior (11.5-12.3% vs 4.2-4.4%) was not separately
+investigated, folded into the same accepted limitation rather than treated as a distinct open
+question.
+
 ## Open questions
 
-- Shoulder is now substantially better with the vertebra anchored search, outlier rate roughly halved to two thirds cut, confirmed at full dataset scale, but posterior view is still clearly elevated, 11.5-12.3% versus under 4.5% for anterior. Whether the posterior specific gap has its own separate cause, or is just the same precision limit showing up more given posterior's generally noisier signal, not checked
-- What still limits shoulder past the vertebra anchor is a harder, more intrinsic precision problem within the right neighborhood, not a location bug, tied to how little real signal the crop contains and to shoulder sitting in a junction zone rather than being a self contained bony feature, confirmed by looking at ref 37's own figures. Whether a more flexible geometric transform, for example a non-rigid warp, or accepting shoulder's lower reliability as a known limit, is the better next step is still open
 - Whether to detect and flag a fully empty mask explicitly rather than let it fall through to a meaningless (0, 0) prediction, only known to affect 2 of 76050 rows so far, not fixed yet
 - How shoulder, chest, and pelvis box edges are actually set: ref 37 answers this in outline for shoulder/thorax and for pelvis, see the sections above, both use several reference points rather than a plain axis aligned box, the exact scan direction for the four shoulder/thorax boundary points is still ambiguous in ref 37's own text, and ref 37 does not confirm whether pelvis crops use I_org or I_fuzzy pixels in the final output, see "Original vs preprocessed pixels in the final crop" above
 - Whether BS-80K's own pipeline follows ref 37's 46 region breakdown exactly or merges/drops sub-regions before producing its own 26 folders, not confirmed, see the mapping section above, "ankle" specifically has no named counterpart in ref 37
