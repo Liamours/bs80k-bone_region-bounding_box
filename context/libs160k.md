@@ -65,6 +65,38 @@ Checked directly, on pixels, not just row counts: took one crop from 5 different
 
 The scaling problem this creates: one crop against the full 13476-candidate pool took 3-5 minutes. LIBS-160K has 192456 region-crop rows total, brute forcing all of them the same way would take on the order of two years of compute, not feasible as is. Recovering this at any real scale needs a smarter approach than searching every crop against every candidate, not attempted yet, a real next decision, not a detail.
 
+## Multi-step duplicate check, phase 1: exact MD5 (`src/dedup/phase1_md5.py`)
+
+Prompted by a direct concern: LIBS-160K's own images already look reprocessed, not a plain copy
+(`result/figures/libs_region_mapping_check.png` shows visibly grainier crops than bs80k's own),
+so any duplication that survives a recompress or resize needs a method that tolerates that,
+not just exact hashing. MD5 is step one, cheap, fast, catches byte identical only, this is its
+ceiling, not the final answer, phase 2 (perceptual hash) and phase 3 (pixel verification of
+whatever phase 2 flags) are the next steps, not run yet.
+
+What MD5 alone already found, checked across bs80k's whole body and region layers, LIBS-160K's
+whole body layer, and all 3 of LIBS-160K's own tsv splits (train_imgs.tsv, test_imgs.tsv,
+valid_imgs.tsv) together, not each in isolation:
+
+- **35.0% of LIBS-160K's 192456 region-crop rows (67405 rows) sit in an exact duplicate group**,
+  32469 groups total, mostly pairs (31219), some triples/quads, one group of 6.
+- **95.3% of those duplicate groups (30933 of 32469) span more than one split**, the same image
+  content sitting under a different `image_id` in `train`, `test`, and/or `valid`. Only 1536
+  groups are duplicated within a single split. 81 groups specifically touch both `train` and
+  `test`. Anyone training and evaluating on LIBS-160K's own official split boundary is very
+  likely training on images that reappear in its own test set under a different id, a real
+  leakage risk, not a rare edge case, this is the majority pattern for every duplicate found.
+- **0 exact cross-dataset matches in the region-crop layer**, despite `context/libs160k.md`'s
+  own template-matching section above already confirming real overlap exists. Expected, not a
+  contradiction: MD5 needs byte identical files, and LIBS-160K's region crops are visibly
+  reprocessed. This is exactly the gap phase 2 (perceptual hash) exists to close. The whole body
+  layer's own cross-dataset matches (6484 groups) are untouched by this, those files are
+  genuinely byte identical, confirmed earlier in this file.
+
+`context/dataset.md` has the bs80k-only side of this same sweep, a systematic elbowLPOST /
+elbowRPOST duplication affecting 99.7% of patients, and 4 pairs of bs80k patient ids that read as
+the same real patient entered twice.
+
 ## Planned approach, borrowed from MedGround
 
 For later, not implemented yet. MedGround, Bridging the Evidence Gap in Medical Vision-Language Models with Verified Grounding Data, Zhang, Wu, Luo, Wang, Lv, submitted January 2026, https://arxiv.org/abs/2601.06847, general medical imaging, not chest X-ray specific, describes an automated pipeline turning existing segmentation resources into grounding data. Per its own abstract, read directly, not secondhand: expert segmentation masks serve as spatial anchors, the pipeline extracts localization targets, shape cues, and spatial information from those masks, a vision-language model generates natural, clinically grounded queries reflecting morphology and location, then a multi-stage verification step, formatting checks, geometry and medical rules, and visual judging, filters out inadequate samples before they enter the final dataset, named MedGround-35K, 35000 samples. Only the abstract has been read, not the full method, this is what is confirmed so far.
