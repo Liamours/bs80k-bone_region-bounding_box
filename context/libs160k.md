@@ -139,6 +139,25 @@ bs80k's 2925 patients matched into LIBS-160K) is not uniform across regions:
 Full detail (all 114456 pairs, per-region summary) is in
 `result/tables/dataset_duplication_and_regions.xlsx`, sheet "Duplicate Detail (pHash)".
 
+## Stance on LIBS-160K's own intra-dataset duplication and split leakage
+
+Decided, not left open: this project does not fix, dedupe, or re-split LIBS-160K's own
+train/test/valid files. It is not this project's dataset to alter, only its own recovered boxes
+and combined VQA dataset are. What this project does instead:
+
+- Flag it prominently, here and in `result/tables/dataset_duplication_and_regions.xlsx`, so
+  anyone who does train or evaluate directly on LIBS-160K's own official split boundary knows
+  95.3% of its intra-duplicate groups cross a split, a real leakage risk, not a rare edge case.
+- Confirm this project's own combined dataset is not exposed to that leakage. Checked directly,
+  not assumed: nowhere in `src/vqa/build_grounding_dataset.py` or `src/dedup/phase2_phash.py`
+  does a `train`/`test`/`valid` split boundary gate anything. Captions are borrowed by exact
+  `(region, caption type)` lookup, not tied to one split. The phase 2 pHash sweep pools all 3
+  splits together per region on purpose, deliberately blind to which split a LIBS-160K image
+  came from. `split_dataset.py`'s own 80/10/10 split is this project's own, by bs80k/libs160k
+  patient id, computed after LIBS-160K's splits are already irrelevant to the pipeline.
+- If a future step ever ingests LIBS-160K's official splits directly for something this project
+  hasn't done yet, re-open this decision then, do not assume the stance above still covers it.
+
 ## Planned approach, borrowed from MedGround
 
 For later, not implemented yet. MedGround, Bridging the Evidence Gap in Medical Vision-Language Models with Verified Grounding Data, Zhang, Wu, Luo, Wang, Lv, submitted January 2026, https://arxiv.org/abs/2601.06847, general medical imaging, not chest X-ray specific, describes an automated pipeline turning existing segmentation resources into grounding data. Per its own abstract, read directly, not secondhand: expert segmentation masks serve as spatial anchors, the pipeline extracts localization targets, shape cues, and spatial information from those masks, a vision-language model generates natural, clinically grounded queries reflecting morphology and location, then a multi-stage verification step, formatting checks, geometry and medical rules, and visual judging, filters out inadequate samples before they enter the final dataset, named MedGround-35K, 35000 samples. Only the abstract has been read, not the full method, this is what is confirmed so far.
