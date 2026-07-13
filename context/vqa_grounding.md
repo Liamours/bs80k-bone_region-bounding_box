@@ -138,3 +138,31 @@ files. `grounding_qa_train.jsonl` (60840 rows, 2340 ids, 4.7% abnormal),
 `grounding_qa_val.jsonl` (7592 rows, 292 ids, 4.7% abnormal), `grounding_qa_test.jsonl` (7618
 rows, 293 ids, 4.4% abnormal), all saved alongside `grounding_qa.jsonl` in
 `bs80k-vqa-grounding/`, row counts sum to the full 76050 exactly.
+
+## v3: whole body grounding, "localize the patient's whole body"
+
+Once `bs80k-wholebody-bb/bounding_boxes.csv` existed at full scale (`context/wholebody_bbox.md`,
+6494 rows, every id and view), the same "localize X" question became answerable one level up,
+not a region inside the whole body image, but the whole body inside its own fixed scanner
+canvas. `build_grounding_dataset.py` now also writes one `region: "whole_body"` record per
+`bs80k-wholebody-bb/bounding_boxes.csv` row, appended after the region records, so the file now
+has 82544 total (76050 region plus 6494 whole_body).
+
+Diagnosis for a whole_body row comes from `wholeBodyANT.txt`/`wholeBodyPOST.txt` directly, the
+same 0/1 label convention as every region folder (`context/dataset.md`), abnormal if any nidus
+exists anywhere in the image, not derived or inferred. Hotspots reuse the same `hotspots_in_box`
+containment check, against the whole body box instead of a region box, so it naturally picks up
+every abnormal nidus in the image, 34.4% of whole_body rows have at least one, versus 5.7% for
+region rows, expected, a whole body box covers far more area than any one region.
+
+Deliberately does not carry `caption_description`, `caption_diagnosis`, `low_precision_region`,
+or `region_overlap`. The first two have no LIBS-160K source, LIBS-160K's 39 templates are all
+region level, inventing whole body caption text would break the exact reuse this project has
+held to for every other caption field. The other two are region level quality signals that do
+not have a whole body equivalent yet. A consumer should check `region == "whole_body"` before
+expecting the region-only fields, the schema is not uniform across the two record kinds by
+choice, not oversight.
+
+`split_dataset.py` re-run unchanged, still patient id level, now spans all 3247 ids (whole_body
+records exist for every id, not just the 2925 with region crops): 65956 train / 8268 val / 8320
+test rows, zero id overlap confirmed again, sums to 82544 exactly.

@@ -16,7 +16,10 @@ Three ingredients, no LLM, no cross-dataset image matching:
   3. LIBS-160K's 39 caption templates (context/libs160k.md), reused verbatim by exact
      (region, caption type) lookup, not paraphrased.
 
-One JSON record per bounding_boxes.csv row (so per region per patient per view).
+One JSON record per bounding_boxes.csv row (so per region per patient per view), plus one
+"whole_body" record per bs80k-wholebody-bb/bounding_boxes.csv row (context/wholebody_bbox.md),
+so "localize the patient's whole body" style questions are grounded in that box instead of one
+region's box.
 """
 import json
 import xml.etree.ElementTree as ET
@@ -26,6 +29,7 @@ import pandas as pd
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 BB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\bounding_boxes.csv")
+WB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-wholebody-bb\bounding_boxes.csv")
 LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw\LIBS-160K-EN")
 OUT = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\grounding_qa.jsonl")
 
@@ -174,15 +178,65 @@ def build_record(row, caption_lookup, nidus_boxes, region_boxes) -> dict:
     }
 
 
+def load_wholebody_labels() -> dict[tuple[int, str], str]:
+    """(id, view) -> "normal"/"abnormal", same txt convention as every region folder
+    (context/dataset.md), wholeBodyANT.txt/wholeBodyPOST.txt label the whole image, not one
+    region: abnormal if any nidus box exists anywhere in it."""
+    labels = {}
+    for view, folder in [("ANT", "wholeBodyANT"), ("POST", "wholeBodyPOST")]:
+        txt_path = RAW / folder / f"{folder}.txt"
+        for line in txt_path.read_text().splitlines():
+            filename, label = line.strip().split("\t")
+            pid = int(filename.removesuffix(".jpg"))
+            labels[(pid, view)] = "abnormal" if label == "1" else "normal"
+    return labels
+
+
+def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
+    """"Can you localize the patient's whole body" style questions, grounded in
+    bs80k-wholebody-bb/bounding_boxes.csv (the body's own location inside the fixed scanner
+    canvas, context/wholebody_bbox.md) rather than one region's location inside the whole body
+    image. No caption_description/caption_diagnosis here, LIBS-160K has no whole body caption
+    template to borrow, only region ones, inventing one would break the exact reuse this
+    project has held to for every other caption field."""
+    pid, view = int(row["id"]), row["view"]
+    bbox = [int(row["x"]), int(row["y"]), int(row["width"]), int(row["height"])]
+    diagnosis = wb_labels[(pid, view)]
+    hotspots = hotspots_in_box(nidus_boxes.get((pid, view), []), *bbox)
+
+    qa = [
+        {"question": "Can you localize the patient's whole body in this bone scan?", "answer_bbox": bbox},
+        {"question": "Does this whole body bone scan show abnormal tracer uptake anywhere?",
+         "answer": "Yes" if diagnosis == "abnormal" else "No"},
+    ]
+    if hotspots:
+        qa.append({"question": "Where is the abnormal tracer uptake in this whole body bone scan?",
+                   "answer_bboxes": [h["bbox"] for h in hotspots]})
+
+    return {
+        "image": f"wholeBody{view}/{pid}.jpg",
+        "region": "whole_body",
+        "view": view,
+        "bbox": bbox,
+        "diagnosis": diagnosis,
+        "hotspots": hotspots,
+        "qa": qa,
+    }
+
+
 def main():
     caption_lookup = load_caption_lookup()
     nidus_boxes = load_nidus_boxes()
     df = pd.read_csv(BB_CSV)
     region_boxes = build_region_boxes(df)
+    wb_df = pd.read_csv(WB_CSV)
+    wb_labels = load_wholebody_labels()
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     n_with_hotspots = 0
     n_overlap = 0
+    n_wb_records = 0
+    n_wb_with_hotspots = 0
     with OUT.open("w", encoding="utf-8") as f:
         for _, row in df.iterrows():
             record = build_record(row, caption_lookup, nidus_boxes, region_boxes)
@@ -192,9 +246,18 @@ def main():
                 n_overlap += 1
             f.write(json.dumps(record) + "\n")
 
-    print(f"saved {OUT}, {len(df)} records")
-    print(f"{n_with_hotspots} records ({n_with_hotspots / len(df):.1%}) have at least one contained hotspot box")
-    print(f"{n_overlap} records ({n_overlap / len(df):.1%}) overlap at least one sibling region box")
+        for _, row in wb_df.iterrows():
+            record = build_wholebody_record(row, wb_labels, nidus_boxes)
+            n_wb_records += 1
+            if record["hotspots"]:
+                n_wb_with_hotspots += 1
+            f.write(json.dumps(record) + "\n")
+
+    total = len(df) + n_wb_records
+    print(f"saved {OUT}, {total} records ({len(df)} region + {n_wb_records} whole_body)")
+    print(f"{n_with_hotspots} region records ({n_with_hotspots / len(df):.1%}) have at least one contained hotspot box")
+    print(f"{n_overlap} region records ({n_overlap / len(df):.1%}) overlap at least one sibling region box")
+    print(f"{n_wb_with_hotspots} whole_body records ({n_wb_with_hotspots / n_wb_records:.1%}) have at least one contained hotspot box")
 
 
 if __name__ == "__main__":

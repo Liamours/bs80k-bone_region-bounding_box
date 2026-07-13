@@ -17,8 +17,8 @@ RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 OUT = Path(__file__).resolve().parents[2] / "result" / "figures" / "bounding_box_preview.png"
 VIEW = "ANT"
 N = 5
-ALPHA = 0.5
-BLUE = np.array([0, 0, 255], dtype=np.float64)
+ALPHA = 1.0
+CYAN = np.array([0, 255, 255], dtype=np.float64)
 
 PLAIN_REGIONS = [
     "ankleL", "ankleR", "chestL", "chestR", "elbowL", "elbowR",
@@ -57,7 +57,7 @@ for ax, i in zip(axes, ids):
 
     outlined = base_rgb.copy()
     on = line_mask > 0
-    outlined[on] = (1 - ALPHA) * base_rgb[on] + ALPHA * BLUE
+    outlined[on] = (1 - ALPHA) * base_rgb[on] + ALPHA * CYAN
 
     ax.imshow(outlined.astype(np.uint8))
     ax.axis("off")
