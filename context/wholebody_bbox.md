@@ -134,11 +134,29 @@ outlier detector is still concentrating on BS-80K's own already-known problem po
 322 excluded ids and friends), not spuriously flagging the new cohort, a reassuring sign the
 method generalizes rather than just fitting noise in the original population.
 
+## A second, more conservative automated signal: likely_corrupt_image
+
+Revisited the "bad image versus real small body" split deliberately rather than leaving it pure
+manual review forever. A real whole body silhouette is always tall and narrow regardless of how
+small the patient is, a corrupt image's own largest connected component carries no such
+constraint. Checked against 9 already visually inspected outliers: the 3 confirmed pure noise
+cases (no skeleton at all, `result/figures/wholebody_outlier_preview.png`) sat at largest
+connected component aspect ratio (height / width of its own bounding box) 0.91-1.36. Every case
+with any real skeletal structure, including 2 genuinely ambiguous blob shaped corrupt images and
+2 genuine but atypically proportioned real scans (`result/figures/aspect_ratio_check.png`), sat
+at 1.77 or above.
+
+`likely_corrupt_image` (`generate_wholebody_bounding_boxes.py`) uses a conservative threshold of
+1.5, precision favored over recall on purpose: it only flags the clearest no-real-content cases,
+23 of 674 outliers (3.4%, 16 ANT + 7 POST), not an attempt to resolve the whole ambiguous middle
+automatically. That middle, blob shaped corrupt images that still have a tall-ish silhouette, or
+real scans with an unusual pose or crop, is a genuinely fuzzy problem this one feature does not
+solve, it narrows the human review queue, it does not replace it. Never drops a row, same
+convention as `outlier` itself.
+
 ## Not done yet
 
-- Outliers are flagged, not yet split into "bad image" versus "real small body," that still
-  took a human look at 5 images, not an automated distinction
+- The ambiguous middle between "confirmed corrupt" and "confirmed real," roughly 96% of flagged
+  outliers, still needs a human look, no further automated signal attempted yet
 - No decision yet on what a downstream annotation consumer should do with a flagged bad image,
   exclude it, keep it with a flag, something else
-- Not yet joined into `grounding_qa.jsonl`, the VQA and grounding dataset currently only knows
-  about region level boxes, not the whole body box this file describes

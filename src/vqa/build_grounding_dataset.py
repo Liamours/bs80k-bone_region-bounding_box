@@ -231,6 +231,12 @@ def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
     (context/wholebody_bbox.md's own visual check found both), so dropping flagged rows would
     silently remove real, usable scans along with the bad ones. A consumer that wants only the
     bad-image kind still has to look, this just narrows down where.
+
+    likely_corrupt_image (generate_wholebody_bounding_boxes.py) is a second, deliberately more
+    conservative automated signal on top of outlier, precision favored over recall: it only
+    flags the clearest no-real-content cases (aspect ratio of the largest connected component
+    under 1.5, a real body silhouette is always tall and narrow, a corrupt image's largest blob
+    is not), still never dropped, still just a flag.
     """
     pid, view = int(row["id"]), row["view"]
     bbox = [int(row["x"]), int(row["y"]), int(row["width"]), int(row["height"])]
@@ -255,6 +261,7 @@ def build_wholebody_record(row, wb_labels, nidus_boxes) -> dict:
         "hotspots": hotspots,
         "outlier": bool(row["outlier"]),
         "anomaly_score": float(row["anomaly_score"]),
+        "likely_corrupt_image": bool(row["likely_corrupt_image"]),
         "qa": qa,
     }
 

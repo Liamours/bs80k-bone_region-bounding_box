@@ -15,6 +15,18 @@ single size cutoff, since context/wholebody_bbox.md's own visual check found bot
 patients and genuinely bad source images in the same flagged tail, a size only rule cannot tell
 them apart, a human still has to look, this only narrows down where to look.
 
+`largest_cc_aspect_ratio` and `likely_corrupt_image` add one more, deliberately conservative,
+automated signal on top of that, not a replacement for it. A real whole body silhouette is
+always tall and narrow regardless of patient size, a corrupt image's own largest connected
+component is not constrained that way. Checked directly against 9 already visually inspected
+outliers (context/wholebody_bbox.md, this file's own docstring history): the 3 confirmed pure
+noise cases (no skeleton at all) sat at aspect ratio 0.91-1.36, while every case with any real
+skeletal structure, including 2 genuinely ambiguous blob shaped corrupt images and 2 genuine but
+atypically proportioned real scans, sat at 1.77 or above. `likely_corrupt_image` uses a
+conservative threshold of 1.5, precision favored over recall on purpose: it only flags the
+clearest no-real-content cases (23 of 674 outliers, 3.4%), the remaining ambiguous middle still
+needs a human look, this narrows the queue, it does not replace it.
+
 LIBS-160K's own wholeANT/wholePOST classification images are byte identical to BS-80K's own
 wholeBodyANT/wholeBodyPOST for every one of the 3247 shared ids, and its Abnormal/Normal folder
 placement agrees with BS-80K's own txt label 100% of the time, checked directly, not assumed
@@ -26,6 +38,7 @@ together), not two separate models, so outlier scores stay comparable across bot
 import sys
 from pathlib import Path
 
+import cv2
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -33,6 +46,8 @@ from sklearn.ensemble import IsolationForest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "matching"))
 from core import background_mask
+
+CORRUPT_ASPECT_THRESHOLD = 1.5
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw")
@@ -71,10 +86,17 @@ def whole_body_bbox(img: np.ndarray) -> dict:
         # pipeline's own near-blank crops (context/method.md), full canvas, flagged by caller
         x0, y0, x1, y1 = 0, 0, W - 1, H - 1
         fallback = True
+        largest_cc_aspect_ratio = 0.0
     else:
         x0, y0 = max(0, int(xs.min()) - PAD), max(0, int(ys.min()) - PAD)
         x1, y1 = min(W - 1, int(xs.max()) + PAD), min(H - 1, int(ys.max()) + PAD)
         fallback = False
+        n, _, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), connectivity=8)
+        if n > 1:
+            cx, cy, cw, ch, _ = stats[1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])]
+            largest_cc_aspect_ratio = ch / cw if cw > 0 else 0.0
+        else:
+            largest_cc_aspect_ratio = 0.0
     w, h = x1 - x0, y1 - y0
     return {
         "x": x0, "y": y0, "width": w, "height": h,
@@ -86,11 +108,12 @@ def whole_body_bbox(img: np.ndarray) -> dict:
         "width_frac": w / W,
         "height_frac": h / H,
         "fallback": fallback,
+        "largest_cc_aspect_ratio": largest_cc_aspect_ratio,
     }
 
 
 def main():
-    region_ids = set(pd.read_csv(BB_CSV)["id"].unique())
+    region_ids = set(pd.read_csv(BB_CSV, low_memory=False)["id"].unique())
 
     all_rows = []
     for view, folder in [("ANT", "wholeBodyANT"), ("POST", "wholeBodyPOST")]:
@@ -111,6 +134,7 @@ def main():
         df["outlier"] = clf.fit_predict(X) == -1
         df["anomaly_score"] = -clf.score_samples(X)
         df["has_region_crops"] = df["id"].isin(region_ids) & (df["source"] == "bs80k")
+        df["likely_corrupt_image"] = df["outlier"] & (df["largest_cc_aspect_ratio"] < CORRUPT_ASPECT_THRESHOLD)
 
         n_fallback = df["fallback"].sum()
         outlier_no_crops = (~df.loc[df["outlier"], "has_region_crops"]).mean()
@@ -119,7 +143,8 @@ def main():
               f"{n_fallback} fallback (blank), "
               f"{df['outlier'].sum()} outliers ({df['outlier'].mean():.1%}), "
               f"outliers lacking region crops {outlier_no_crops:.1%}, "
-              f"non-outliers lacking region crops {normal_no_crops:.1%}")
+              f"non-outliers lacking region crops {normal_no_crops:.1%}, "
+              f"{df['likely_corrupt_image'].sum()} likely_corrupt_image (of the outliers)")
         all_rows.append(df)
 
     out = pd.concat(all_rows, ignore_index=True)
