@@ -17,8 +17,11 @@ Three additive columns:
   - duplicate_of_sibling_component: this row's own crop is byte identical to this same patient's
     OTHER component (elbowLPOST <-> elbowRPOST, 99.7% of patients, phase 1 MD5). Different kind
     of duplicate than the one above, same patient not a different one.
-  - libs160k_duplicate_matches: LIBS-160K split/image_id(hamming distance) this row's crop
-    perceptually matches (phase 2 pHash), semicolon joined, blank if none.
+  - libs160k_duplicate_matches: LIBS-160K split/image_id(hamming distance, IoU vs this row's own
+    box) this row's crop perceptually matches (phase 2 pHash), semicolon joined, blank if none.
+    Filtered to phase 3's own location verification (src/dedup/phase3_verify_phash.py), IoU >=
+    0.5 against this row's own already-recovered box, not the raw, unfiltered phase 2 flag list,
+    since phase 3 found 12.5% of raw flags do not actually land at the claimed location.
 """
 import json
 from pathlib import Path
@@ -27,10 +30,12 @@ import pandas as pd
 
 BB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\bounding_boxes.csv")
 MD5_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase1_md5.json")
-PHASH_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase2_phash.json")
+PHASE3_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase3_verification.csv")
+IOU_MIN = 0.5
 
 md5 = json.loads(MD5_JSON.read_text())
-phash = json.loads(PHASH_JSON.read_text())
+phase3 = pd.read_csv(PHASE3_CSV)
+verified = phase3[phase3["iou_vs_ground_truth"] >= IOU_MIN]
 
 # --- cross-patient duplicates: (component, id) -> other patient id ---
 bs_dup = {h: locs for h, locs in md5["dup_groups"].items()
@@ -59,13 +64,16 @@ for locs in bs_dup.values():
         sibling_component[(folder_a, pid)] = folder_b
         sibling_component[(folder_b, pid)] = folder_a
 
-# --- libs160k perceptual-hash cross-dataset matches ---
+# --- libs160k perceptual-hash cross-dataset matches, phase 3 IoU-verified only ---
 libs_matches: dict[tuple[str, int], list[str]] = {}
-for f in phash["flags"]:
-    key = (f["bs80k_folder"], f["bs80k_id"])
-    libs_matches.setdefault(key, []).append(f"{f['libs160k_split']}/{f['libs160k_image_id']}({f['hamming_distance']})")
+for _, row in verified.iterrows():
+    key = (row["bs80k_folder"], int(row["bs80k_id"]))
+    libs_matches.setdefault(key, []).append(
+        f"{row['libs160k_split']}/{int(row['libs160k_image_id'])}"
+        f"({int(row['hamming_distance'])},iou={row['iou_vs_ground_truth']:.2f})"
+    )
 
-df = pd.read_csv(BB_CSV)
+df = pd.read_csv(BB_CSV, low_memory=False)
 df["duplicate_of_patient_id"] = [cross_patient.get((c, i)) for c, i in zip(df["component"], df["id"])]
 df["duplicate_of_sibling_component"] = [sibling_component.get((c, i)) for c, i in zip(df["component"], df["id"])]
 df["libs160k_duplicate_matches"] = [
