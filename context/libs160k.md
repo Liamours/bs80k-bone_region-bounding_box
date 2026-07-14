@@ -97,6 +97,33 @@ valid_imgs.tsv) together, not each in isolation:
 elbowRPOST duplication affecting 99.7% of patients, and 4 pairs of bs80k patient ids that read as
 the same real patient entered twice.
 
+## Phase 3: verifying phase 2's matches against this project's own ground truth, at full scale
+
+Phase 2 calibrated its Hamming distance threshold on 5 examples. Phase 3, `src/dedup/phase3_verify_phash.py`,
+checks all 114456 of them, not just the calibration sample, and checks the right thing: does the
+LIBS crop, searched freely across the whole bs80k whole body image with this project's own
+`core.locate()`, land at the same location bs80k's own already-recovered box already says it
+should (`bounding_boxes.csv`), by IoU, not a raw pixel similarity score.
+
+A first version of this script compared the LIBS crop resized into bs80k's exact box, rigid, no
+search. It found chest averaging a *negative* pearson correlation despite chest being one of this
+project's best solved regions, a red flag, checked before trusting it: for the single worst case,
+a full unconstrained search landed at the *exact same position* as bs80k's own box, offset (0, 0),
+with a real, unambiguous peak margin, not the near-zero-signal result the rigid, same position
+comparison implied. The location was right, raw pixel correlation between two independently
+reprocessed copies of the same image just isn't a reliable absolute bar, unlike bs80k's own
+purely internal comparisons. Rewrote phase 3 around location agreement instead.
+
+Result, full scale: **median IoU 1.000, mean 0.849, 87.5% of all 114456 pairs land with IoU >=
+0.5 against bs80k's own ground truth box**. By region: ankle/elbow/head/knee/pelvis/vertebra all
+confirm at 97-99%. Chest confirms at a solid but lower 78-80%. Shoulder confirms at only 61-64%,
+consistent with, not contradicting, this project's own already documented shoulder box
+imprecision (`context/method.md`), phase 3 is checking agreement against bs80k's own shoulder
+box, and that box itself is known to be imprecise, so a genuinely correct LIBS match can still
+show low IoU there. By Hamming distance: 0 confirms 95.7%, 2 confirms 93.5%, 4 confirms 76.3%,
+a real, expected decline that matches the original 5-example calibration's own finding that 4 was
+the loosest reliable threshold, now confirmed at full scale, not just on 5 examples.
+
 ## Multi-step duplicate check, phase 2: Perceptual Hash (pHash) closes the gap phase 1 left
 
 Phase 1 (MD5) found 0 exact cross-dataset region-crop matches despite confirmed real overlap,

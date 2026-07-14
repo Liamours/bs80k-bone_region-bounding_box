@@ -15,6 +15,30 @@ Candidate pool per region: LIBS-160K crops NOT already matched to a bs80k patien
 (the "residual"), since the ones phase 2 already matched belong to a known bs80k patient, not a
 new one. Template matching (masked, core.locate, this project's own proven method) against the
 one target patient's own whole body image, not a blind many-to-many search.
+
+v1 of this script shipped without two checks and produced an unreliable sample as a result
+(context/wholebody_bbox.md, "Region boxes for LIBS-160K's new-only patients: first sample
+attempt, not reliable, do not use", `result/figures/suspicious_shared_match_check.png`): 31.7%
+of its 104 matches turned out to be the same LIBS crop claimed by more than one different target
+patient, a logical impossibility if real. Verified two distinct causes directly: a near blank
+candidate crop (foreground coverage 0.006) matching anywhere with a high score, and several
+fully saturated candidate crops (coverage 1.000, no black background at all, masking cannot
+discriminate) for a small, low detail region, shoulder among them, consistent with this
+project's own already documented shoulder weakness.
+
+Two fixes, both essentially free, no extra candidate evaluations needed since coverage and
+second-best score come from work already being done per candidate:
+
+1. CROP_COVERAGE_MIN / CROP_COVERAGE_MAX reject a candidate crop before it is even searched, if
+   its own foreground coverage sits outside a range every genuine bs80k region crop this project
+   has ever measured has landed in (`context/method.md`'s own background fraction notes,
+   ankle ~0.35-0.38 foreground, chest ~0.34, shoulder ~0.46-0.49, all comfortably inside
+   [0.02, 0.95]). A crop at 0.006 or 1.000 coverage never resembles any of those.
+2. MIN_CROSS_CANDIDATE_MARGIN requires the winning candidate's own score to beat the second best
+   *competing candidate crop's* own score by a real margin, not just beat an absolute threshold.
+   This is a different thing than `peak_margin`, which only checks for a second peak *within one*
+   correlation surface, not against other candidate crops, and did not separate the 33 bad v1
+   rows from the 71 unshared ones (0.105 vs 0.130 mean, barely different).
 """
 import base64
 import json
@@ -33,10 +57,13 @@ LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw\LIBS-160K
 LIBS_WB = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw")
 WB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-wholebody-bb\bounding_boxes.csv")
 PHASH_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase2_phash.json")
-OUT_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\libs160k_new_patient_sample.csv")
+OUT_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\libs160k_new_patient_sample_v2.csv")
 
 N_PATIENTS = 8
 MATCH_SCORE_THRESHOLD = 0.5
+CROP_COVERAGE_MIN = 0.02
+CROP_COVERAGE_MAX = 0.95
+MIN_CROSS_CANDIDATE_MARGIN = 0.05
 
 REGION_PHRASES = {
     "right chest": "chestR", "left chest": "chestL",
@@ -109,27 +136,45 @@ def main():
         for region_code, items in region_map.items():
             residual = [(split, iid) for split, iid in items if (split, iid) not in matched]
             best = None
+            second_best_score = -1.0
+            n_rejected_coverage = 0
             for split, iid in residual:
                 b64 = tsv_lookup[split].get(iid)
                 if b64 is None:
                     continue
                 crop = np.asarray(Image.open(BytesIO(base64.b64decode(b64))))
                 mask = background_mask(crop)
+                coverage = (mask > 0).mean()
+                if coverage < CROP_COVERAGE_MIN or coverage > CROP_COVERAGE_MAX:
+                    n_rejected_coverage += 1
+                    continue
                 m = locate(crop, whole, mask=mask)
                 if best is None or m["score"] > best[0]["score"]:
+                    if best is not None:
+                        second_best_score = best[0]["score"]
                     best = (m, split, iid)
-            if best and best[0]["score"] >= MATCH_SCORE_THRESHOLD:
+                elif m["score"] > second_best_score:
+                    second_best_score = m["score"]
+
+            cross_margin = (best[0]["score"] - second_best_score) if best else None
+            accept = (best is not None and best[0]["score"] >= MATCH_SCORE_THRESHOLD
+                      and cross_margin is not None and cross_margin >= MIN_CROSS_CANDIDATE_MARGIN)
+            if accept:
                 m, split, iid = best
                 rows.append({
                     "region": region_code, "id": pid, "source": "libs160k",
                     "x": m["x"], "y": m["y"], "width": m["w"], "height": m["h"],
                     "match_score": m["score"], "peak_margin": m["peak_margin"],
+                    "cross_candidate_margin": cross_margin,
                     "matched_libs160k_split": split, "matched_libs160k_image_id": iid,
                 })
-                print(f"  patient {pid} [{region_code}]: matched {split}/{iid}, score={m['score']:.3f} margin={m['peak_margin']:.3f}")
+                print(f"  patient {pid} [{region_code}]: matched {split}/{iid}, score={m['score']:.3f} "
+                      f"peak_margin={m['peak_margin']:.3f} cross_margin={cross_margin:.3f} "
+                      f"({n_rejected_coverage} candidates rejected by coverage)")
             else:
                 best_score = best[0]["score"] if best else None
-                print(f"  patient {pid} [{region_code}]: no confident match ({len(residual)} residual candidates searched, best score {best_score})")
+                print(f"  patient {pid} [{region_code}]: no confident match ({len(residual)} residual candidates, "
+                      f"{n_rejected_coverage} rejected by coverage, best score {best_score}, cross_margin {cross_margin})")
 
     out = pd.DataFrame(rows)
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)

@@ -190,13 +190,40 @@ project's own already-recovered box) does not exist for a patient bs80k never ha
 whole sample as a proof that the approach is directionally possible, not as usable output.
 `libs160k_new_patient_sample.csv` should not be joined into any deliverable as is.
 
-## Not done yet
+## The fix reduced volume but did not fix the underlying problem, closed as a real limitation
 
-- Fix `build_libs_new_patient_region_boxes.py`: reject near blank and fully saturated candidate
-  crops before searching, add a cross-candidate margin (best vs second-best competing crop) and
-  require it to be large before accepting a match, then re-run the sample and, if it holds up,
-  decide on scaling beyond the 8 patient proof of concept. Not done yet, a real compute cost
-  (the first run took about 2 hours for 8 patients), a decision for later, not a default
+Added the two fixes named above (`CROP_COVERAGE_MIN`/`MAX` rejecting near blank and fully
+saturated candidates, `MIN_CROSS_CANDIDATE_MARGIN` requiring the winner to beat the second best
+competing crop by a real margin, not just clear an absolute threshold) and re-ran the same 8
+patient sample. Volume dropped sharply, 104 accepted matches down to 7, confirming the original
+threshold really was far too loose. Checked every one of the 7 before trusting them, not after,
+`result/figures/task3_repeat_match_check.png` and `task3_unique_match_check.png`:
+
+- 5 of the 7 were still the same crop claimed by more than one different patient. One specific
+  case, a "chestL" crop claimed by 3 different patients, visually lands at hip or thigh height in
+  all three, nowhere near the chest, a generic bright hot spot pattern near the pelvis winning
+  the search across unrelated real patients, not a chest match at all.
+- The remaining 2, each claimed by only one patient in this sample, are also wrong on inspection.
+  A "elbowL" match lands at the neck/shoulder junction, not the elbow. A "shoR" match lands at
+  knee height, not the shoulder.
+
+**0 of 7 accepted matches were actually correct.** The fix helped exactly as intended, removing
+the obvious degenerate-crop failure mode, but a harder problem remains underneath: with no
+independent ground truth for a genuinely new patient (bs80k's own cross-check, comparing a found
+location to this project's own already-recovered box, does not exist for a patient bs80k never
+had), a single-image correlation search cannot reliably tell "the correct crop for this specific
+person" apart from "a generic pattern that happens to correlate decently with this one image,"
+especially for regions this project already knows are its weakest, shoulder and elbow among the
+7 candidates checked.
+
+Closing this here rather than tuning thresholds further, the same discipline used for shoulder
+precision above: this is not a threshold problem, it is a missing-ground-truth problem, no
+further threshold adjustment fixes not having something to check a candidate answer against. A
+real fix would need a fundamentally different design, for example requiring a candidate crop to
+be uniquely best across many different target patients simultaneously, not just the single
+target it happened to be searched against, not attempted here, a decision for later, not a
+default. `libs160k_new_patient_sample.csv` and `libs160k_new_patient_sample_v2.csv` should both
+be treated as negative results documenting this investigation, not usable region boxes.
 
 - The ambiguous middle between "confirmed corrupt" and "confirmed real," roughly 96% of flagged
   outliers, still needs a human look, no further automated signal attempted yet
