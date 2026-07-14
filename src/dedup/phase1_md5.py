@@ -11,7 +11,7 @@ Scope, deliberately everything, not just the whole body layer already spot-check
   - libs160k whole body images (wholeANT/wholePOST, Abnormal+Normal)
   - libs160k region-crop tsv images (train_imgs.tsv, test_imgs.tsv, valid_imgs.tsv)
 Reports: intra-LIBS duplicates (including train/test/valid split leakage), and any cross-dataset
-exact match beyond the whole body layer already confirmed (context/libs160k.md).
+exact match beyond the whole body layer already confirmed byte identical.
 """
 import base64
 import hashlib
@@ -21,7 +21,7 @@ from pathlib import Path
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw")
 LIBS_EN = LIBS / "LIBS-160K-EN"
-OUT = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase1_md5.json")
+OUT = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase1_md5.json")
 
 
 def md5_bytes(b: bytes) -> str:

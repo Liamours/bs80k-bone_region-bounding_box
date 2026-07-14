@@ -76,30 +76,14 @@ The paper does not publish or mention a bounding box for a region slice's locati
 - Output file format for the bounding box we produce, not specified yet
 - The one-sample label difference on whole body ANT and POST against paper Table 2, see Labels above
 
-## Two real data quality findings from a full MD5 duplicate sweep (`src/dedup/phase1_md5.py`)
+## Image duplicate detection
 
-Run to check bs80k and LIBS-160K against each other for exact duplicates, checked bs80k's own
-region crop layer too, not just the cross-dataset question. Found two different things, cleanly
-separated by whether the duplicate pair shares one patient id or two:
-
-- **`elbowLPOST` is byte identical to `elbowRPOST` for 2917 of 2925 patients (99.7%)**, same
-  patient id both times, not a rare glitch, close to universal for the posterior elbow crop
-  specifically. No other region/view pair shows this. This explains something glossed over
-  earlier without being flagged: `result/figures/bounding_box_quality.md`'s own metrics table has
-  identical numbers for `elbowLPOST` and `elbowRPOST` down to 4 decimal places, at the time read
-  as a coincidence of two similarly easy regions, it is not a coincidence, the crop pixels
-  bs80k ships for those two folders are the same file for nearly every patient.
-- **4 pairs of different patient ids are byte identical across 24 of bs80k's own 26 region
-  folders each**: `(828, 2244)`, `(312, 570)`, `(831, 3216)`, `(832, 3245)`. Not a coincidental
-  single-region match, the same pair recurs across ankle, chest, head, knee, pelvis, shoulder,
-  and vertebra, both views, every folder checked except 2. These read as the same physical
-  patient entered under two different ids, a real bs80k data integrity issue, not something
-  either this project or LIBS-160K introduced. `bounding_boxes.csv` and everything built from it
-  currently counts these 4 real patients as 8, not corrected yet, a decision still open.
-
-See `context/libs160k.md` for the LIBS-160K side of the same sweep (much larger intra-dataset
-duplication, and why 0 exact cross-dataset region-crop matches were found despite confirmed real
-overlap).
+A full MD5/perceptual-hash/location-verification sweep found real data quality issues in bs80k's
+own region crop layer (a systematic `elbowLPOST`/`elbowRPOST` duplication, and 4 pairs of patient
+ids that read as the same real person entered twice), plus a cross-dataset comparison against a
+second bone scan collection. See `context/dedup.md` for the full findings and the
+`bounding_boxes.csv` columns it produced (`duplicate_of_patient_id`,
+`duplicate_of_sibling_component`, `libs160k_duplicate_matches`).
 
 ## Source
 

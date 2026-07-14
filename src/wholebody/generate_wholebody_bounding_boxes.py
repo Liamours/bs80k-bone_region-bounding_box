@@ -29,8 +29,8 @@ needs a human look, this narrows the queue, it does not replace it.
 
 LIBS-160K's own wholeANT/wholePOST classification images are byte identical to BS-80K's own
 wholeBodyANT/wholeBodyPOST for every one of the 3247 shared ids, and its Abnormal/Normal folder
-placement agrees with BS-80K's own txt label 100% of the time, checked directly, not assumed
-(context/libs160k.md). Beyond those 3247, LIBS-160K has ~3491 more ids per view BS-80K does not,
+placement agrees with BS-80K's own txt label 100% of the time, checked directly, not assumed.
+Beyond those 3247, LIBS-160K has ~3491 more ids per view BS-80K does not,
 real new patients, not a different collection. Those get the same bbox method, one IsolationForest
 per view fit across the combined population (BS-80K's own ids plus LIBS-160K's extra ids
 together), not two separate models, so outlier scores stay comparable across both sources.

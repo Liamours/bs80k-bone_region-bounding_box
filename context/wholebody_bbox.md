@@ -118,7 +118,7 @@ Checked directly, full scale, not assumed: LIBS-160K's `wholeANT`/`wholePOST` cl
 folders are byte identical to BS-80K's own `wholeBodyANT`/`wholeBodyPOST` for every one of the
 3247 shared ids on both views, and LIBS-160K's Abnormal/Normal folder placement agrees with
 BS-80K's own txt label 100% of the time. Not independent data, a repackaging of BS-80K's own
-whole body layer (`context/libs160k.md`).
+whole body layer.
 
 Beyond those 3247, LIBS-160K has 3491 more ids per view that BS-80K does not have at all, real
 new patients. `generate_wholebody_bounding_boxes.py` now runs the same bbox method (threshold 2,
@@ -154,76 +154,7 @@ real scans with an unusual pose or crop, is a genuinely fuzzy problem this one f
 solve, it narrows the human review queue, it does not replace it. Never drops a row, same
 convention as `outlier` itself.
 
-## Region boxes for LIBS-160K's new-only patients: first sample attempt, not reliable, do not use
-
-`src/wholebody/build_libs_new_patient_region_boxes.py` ran a bounded sample (8 new patients x 13
-regions) matching residual (not already phase 2 matched) LIBS-160K crops against each patient's
-own whole body image, saved to `bs80k-bone_region-bb/libs160k_new_patient_sample.csv`. Checked
-before trusting it, not after: 33 of the 104 rows (31.7%) share the exact same matched LIBS crop
-across more than one different target patient, a logical impossibility if the match were real,
-one crop cannot be two different people's ankle.
-
-Verified directly, not just by the count, `result/figures/suspicious_shared_match_check.png`:
-the `ankleR` crop claimed by 6 of 8 patients (`test/9387`) is a near blank crop, foreground
-coverage 0.006, matches essentially anywhere with a high score since there is almost no real
-content to match against wrongly, "located" at three completely different, anatomically
-nonsensical positions (knee height, the other leg, up near the head) across three of its six
-claimants. A second, different failure mode explains the other repeat offenders (`shoL` x5,
-`chestL` x4, `vertbra` x4 patients): all three sit at foreground coverage 1.000, fully saturated,
-no black background at all, so masking cannot help discriminate, and a small low detail crop can
-correlate similarly well against many different real patients. `shoL` specifically being weak is
-consistent with, not a contradiction of, this project's own extensively documented shoulder
-precision problem elsewhere in this file and in `context/method.md`.
-
-Root cause: the script had no data quality pre-filter on candidate crops (near blank or fully
-saturated crops should be rejected before searching, not after), and no cross-candidate margin
-(best score against the second-best competing crop's own score, not just the second-peak
-suppression margin used everywhere else in this project, which only checks for a second peak
-*within* one search, not against other candidate crops). A single absolute score threshold
-(0.5) was not strict enough to catch either failure mode, mean peak_margin for the 33 bad rows
-(0.105) barely differs from the 71 unshared rows (0.130).
-
-Even the 71 unshared rows are not confirmed correct, only not caught by this one check. Unlike
-bs80k's own population, there is no independent ground truth to verify a new patient's box
-against, the cross-check this project used everywhere else (comparing a found location to this
-project's own already-recovered box) does not exist for a patient bs80k never had. Treat this
-whole sample as a proof that the approach is directionally possible, not as usable output.
-`libs160k_new_patient_sample.csv` should not be joined into any deliverable as is.
-
-## The fix reduced volume but did not fix the underlying problem, closed as a real limitation
-
-Added the two fixes named above (`CROP_COVERAGE_MIN`/`MAX` rejecting near blank and fully
-saturated candidates, `MIN_CROSS_CANDIDATE_MARGIN` requiring the winner to beat the second best
-competing crop by a real margin, not just clear an absolute threshold) and re-ran the same 8
-patient sample. Volume dropped sharply, 104 accepted matches down to 7, confirming the original
-threshold really was far too loose. Checked every one of the 7 before trusting them, not after,
-`result/figures/task3_repeat_match_check.png` and `task3_unique_match_check.png`:
-
-- 5 of the 7 were still the same crop claimed by more than one different patient. One specific
-  case, a "chestL" crop claimed by 3 different patients, visually lands at hip or thigh height in
-  all three, nowhere near the chest, a generic bright hot spot pattern near the pelvis winning
-  the search across unrelated real patients, not a chest match at all.
-- The remaining 2, each claimed by only one patient in this sample, are also wrong on inspection.
-  A "elbowL" match lands at the neck/shoulder junction, not the elbow. A "shoR" match lands at
-  knee height, not the shoulder.
-
-**0 of 7 accepted matches were actually correct.** The fix helped exactly as intended, removing
-the obvious degenerate-crop failure mode, but a harder problem remains underneath: with no
-independent ground truth for a genuinely new patient (bs80k's own cross-check, comparing a found
-location to this project's own already-recovered box, does not exist for a patient bs80k never
-had), a single-image correlation search cannot reliably tell "the correct crop for this specific
-person" apart from "a generic pattern that happens to correlate decently with this one image,"
-especially for regions this project already knows are its weakest, shoulder and elbow among the
-7 candidates checked.
-
-Closing this here rather than tuning thresholds further, the same discipline used for shoulder
-precision above: this is not a threshold problem, it is a missing-ground-truth problem, no
-further threshold adjustment fixes not having something to check a candidate answer against. A
-real fix would need a fundamentally different design, for example requiring a candidate crop to
-be uniquely best across many different target patients simultaneously, not just the single
-target it happened to be searched against, not attempted here, a decision for later, not a
-default. `libs160k_new_patient_sample.csv` and `libs160k_new_patient_sample_v2.csv` should both
-be treated as negative results documenting this investigation, not usable region boxes.
+## Not done yet
 
 - The ambiguous middle between "confirmed corrupt" and "confirmed real," roughly 96% of flagged
   outliers, still needs a human look, no further automated signal attempted yet

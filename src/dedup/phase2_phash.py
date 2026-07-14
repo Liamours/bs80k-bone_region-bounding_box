@@ -5,8 +5,8 @@
 """Phase 2 of multi-step duplicate detection: Perceptual Hash (pHash, DCT-based, 64-bit,
 via the imagehash package), scoped to the one gap phase 1 (MD5, src/dedup/phase1_md5.py) named
 explicitly: cross-dataset region-crop matches. MD5 found 0 there despite confirmed real overlap
-(context/libs160k.md's template-matching section), because LIBS-160K's region crops are visibly
-reprocessed, a recompress defeats an exact byte hash but not a perceptual one.
+between the two datasets, because LIBS-160K's region crops are visibly reprocessed, a recompress
+defeats an exact byte hash but not a perceptual one.
 
 Grouped by region (13 codes) rather than compared as one 76050 x 192456 matrix, both because the
 regions are already known (bs80k's own folder name, LIBS-160K's own caption group) and because
@@ -36,7 +36,7 @@ from PIL import Image
 
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw\LIBS-160K-EN")
-OUT = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase2_phash.json")
+OUT = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase2_phash.json")
 HAMMING_THRESHOLD = 4
 
 REGION_PHRASES = {

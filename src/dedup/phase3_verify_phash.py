@@ -38,8 +38,8 @@ from core import locate, background_mask
 RAW = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-imaging-raw")
 LIBS = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\libs160k-imaging-raw\LIBS-160K-EN")
 BB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\bounding_boxes.csv")
-PHASH_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase2_phash.json")
-OUT_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase3_verification.csv")
+PHASH_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase2_phash.json")
+OUT_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase3_verification.csv")
 
 
 def iou(box_a, box_b) -> float:

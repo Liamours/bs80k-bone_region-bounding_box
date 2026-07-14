@@ -5,7 +5,7 @@
 """Note every known duplicate finding directly on bounding_boxes.csv, additive only.
 
 No row is ever dropped or merged, per explicit instruction: these are notes about known
-duplication (context/dataset.md, context/libs160k.md), not a cleanup pass. A downstream
+duplication (context/dataset.md, context/dedup.md), not a cleanup pass. A downstream
 consumer decides what, if anything, to do with a flagged row, this script only makes the
 existing findings visible on the data itself instead of leaving them sitting only in the
 dedup json files and context docs.
@@ -29,8 +29,8 @@ from pathlib import Path
 import pandas as pd
 
 BB_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-bone_region-bb\bounding_boxes.csv")
-MD5_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase1_md5.json")
-PHASE3_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-vqa-grounding\dedup_phase3_verification.csv")
+MD5_JSON = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase1_md5.json")
+PHASE3_CSV = Path(r"C:\Users\lulay\Desktop\wbbs-dataset\bs80k-dedup\dedup_phase3_verification.csv")
 IOU_MIN = 0.5
 
 md5 = json.loads(MD5_JSON.read_text())
