@@ -34,9 +34,32 @@ Mean of each per row pixel metric, 2925 predictions per component (`src/eval/qua
 
 | component | near exact | ssim | match score |
 |---|---|---|---|
-| every region except shoulder (24 of 26) | ~1.00 | ~0.996-0.999 | ~0.994-0.999 |
-| shoulder, anterior (2 of 26) | ~0.243 | ~0.567-0.574 | ~0.563-0.569 |
-| shoulder, posterior (2 of 26) | ~0.245 | ~0.578-0.595 | ~0.558-0.573 |
+| ankleLANT | 0.9999 | 0.9974 | 0.9964 |
+| ankleLPOST | 0.9997 | 0.9969 | 0.9958 |
+| ankleRANT | 0.9995 | 0.9973 | 0.9963 |
+| ankleRPOST | 0.9995 | 0.9969 | 0.9959 |
+| chestLANT | 1.0000 | 0.9969 | 0.9969 |
+| chestLPOST | 1.0000 | 0.9971 | 0.9973 |
+| chestRANT | 1.0000 | 0.9970 | 0.9976 |
+| chestRPOST | 1.0000 | 0.9973 | 0.9976 |
+| elbowLANT | 1.0000 | 0.9959 | 0.9943 |
+| elbowLPOST | 1.0000 | 0.9964 | 0.9966 |
+| elbowRANT | 1.0000 | 0.9959 | 0.9941 |
+| elbowRPOST | 1.0000 | 0.9964 | 0.9966 |
+| headANT | 1.0000 | 0.9976 | 0.9992 |
+| headPOST | 1.0000 | 0.9967 | 0.9981 |
+| kneeLANT | 1.0000 | 0.9971 | 0.9982 |
+| kneeLPOST | 1.0000 | 0.9964 | 0.9969 |
+| kneeRANT | 1.0000 | 0.9971 | 0.9983 |
+| kneeRPOST | 1.0000 | 0.9964 | 0.9971 |
+| pelvisANT | 1.0000 | 0.9973 | 0.9991 |
+| pelvisPOST | 1.0000 | 0.9974 | 0.9993 |
+| shoLANT | 0.2430 | 0.5614 | 0.5693 |
+| shoLPOST | 0.2405 | 0.5782 | 0.5726 |
+| shoRANT | 0.2433 | 0.5739 | 0.5626 |
+| shoRPOST | 0.2494 | 0.5953 | 0.5581 |
+| vertbraANT | 1.0000 | 0.9987 | 0.9993 |
+| vertbraPOST | 1.0000 | 0.9992 | 0.9989 |
 
 ## Status
 
